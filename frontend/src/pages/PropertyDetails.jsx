@@ -31,7 +31,7 @@ const PropertyDetails = () => {
   const [bookingStep, setBookingStep] = useState(1); // 1: KYC, 2: Signature, 3: Payment
   const sigPad = useRef({});
   const [signatureData, setSignatureData] = useState(null);
-  const [numberOfPersons, setNumberOfPersons] = useState(1);
+  const [numberOfPersons, setNumberOfPersons] = useState('');
   const [kycData, setKycData] = useState([{
     phone: user?.phone || '',
     address: user?.address || '',
@@ -41,6 +41,11 @@ const PropertyDetails = () => {
   }]);
 
   const handlePersonCountChange = (count) => {
+    if (count === '') {
+      setNumberOfPersons('');
+      setKycData(prev => prev.slice(0, 1));
+      return;
+    }
     const newCount = Math.max(1, parseInt(count) || 1);
     setNumberOfPersons(newCount);
     
@@ -112,6 +117,10 @@ const PropertyDetails = () => {
       const p = kycData[i];
       if (!p.phone || !p.address || !p.photo || !p.aadhaar || !p.company_id) {
         setBookingError(`Please fill all fields and select all documents for Person ${i + 1}.`);
+        return;
+      }
+      if (p.phone.length !== 10) {
+        setBookingError(`Phone number for Person ${i + 1} must be exactly 10 digits.`);
         return;
       }
     }
@@ -428,11 +437,16 @@ const PropertyDetails = () => {
                         <label className="block text-sm font-semibold text-secondary mb-1">Phone Number</label>
                         <input 
                           type="text" 
+                          pattern="[0-9]{10}"
+                          maxLength="10"
+                          title="Phone number must be exactly 10 digits"
                           className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none text-sm" 
                           value={person.phone}
                           onChange={e => {
+                            // Only allow numbers
+                            const val = e.target.value.replace(/[^0-9]/g, '');
                             const newKyc = [...kycData];
-                            newKyc[index].phone = e.target.value;
+                            newKyc[index].phone = val;
                             setKycData(newKyc);
                           }}
                           required
