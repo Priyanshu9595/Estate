@@ -31,13 +31,30 @@ const PropertyDetails = () => {
   const [bookingStep, setBookingStep] = useState(1); // 1: KYC, 2: Signature, 3: Payment
   const sigPad = useRef({});
   const [signatureData, setSignatureData] = useState(null);
-  const [kycData, setKycData] = useState({
+  const [numberOfPersons, setNumberOfPersons] = useState(1);
+  const [kycData, setKycData] = useState([{
     phone: user?.phone || '',
     address: user?.address || '',
     photo: null,
     aadhaar: null,
     company_id: null
-  });
+  }]);
+
+  const handlePersonCountChange = (count) => {
+    const newCount = Math.max(1, parseInt(count) || 1);
+    setNumberOfPersons(newCount);
+    
+    setKycData(prev => {
+      if (newCount > prev.length) {
+        const additional = Array(newCount - prev.length).fill().map(() => ({
+          phone: '', address: '', photo: null, aadhaar: null, company_id: null
+        }));
+        return [...prev, ...additional];
+      } else {
+        return prev.slice(0, newCount);
+      }
+    });
+  };
 
   useEffect(() => {
     fetchPropertyData();
@@ -91,9 +108,12 @@ const PropertyDetails = () => {
       setBookingError('Please select check-in and check-out dates.');
       return;
     }
-    if (!kycData.phone || !kycData.address || !kycData.photo || !kycData.aadhaar || !kycData.company_id) {
-      setBookingError('Please fill all fields and select all documents.');
-      return;
+    for (let i = 0; i < kycData.length; i++) {
+      const p = kycData[i];
+      if (!p.phone || !p.address || !p.photo || !p.aadhaar || !p.company_id) {
+        setBookingError(`Please fill all fields and select all documents for Person ${i + 1}.`);
+        return;
+      }
     }
     setBookingError('');
     setBookingStep(2);
@@ -155,21 +175,26 @@ const PropertyDetails = () => {
               razorpay_signature: response.razorpay_signature
             });
 
-            // 4. Upload KYC files
-            const formData = new FormData();
-            formData.append('photo', kycData.photo);
-            formData.append('aadhaar', kycData.aadhaar);
-            formData.append('company_id', kycData.company_id);
-            
-            const uploadRes = await axios.post('/api/upload', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            // 4. Upload KYC files for all persons
+            let allKycUrls = [];
+            for (let i = 0; i < kycData.length; i++) {
+              const formData = new FormData();
+              formData.append('photo', kycData[i].photo);
+              formData.append('aadhaar', kycData[i].aadhaar);
+              formData.append('company_id', kycData[i].company_id);
+              
+              const uploadRes = await axios.post('/api/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+              });
+              
+              allKycUrls = [...allKycUrls, ...uploadRes.data.fileUrls];
+            }
 
-            // 5. Update User Profile with KYC urls and phone/address
+            // 5. Update User Profile with KYC urls and phone/address (from main person)
             await axios.put('/api/auth/profile', {
-              phone: kycData.phone,
-              address: kycData.address,
-              kyc_details: uploadRes.data.fileUrls
+              phone: kycData[0].phone,
+              address: kycData[0].address,
+              kyc_details: allKycUrls
             });
 
             // 6. Finalize Lease Booking
@@ -350,7 +375,14 @@ const PropertyDetails = () => {
       {bookingUnit && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="bg-primary p-6 text-white text-center shrink-0">
+            <div className="bg-primary p-6 text-white text-center shrink-0 relative">
+              <button 
+                onClick={() => setBookingUnit(null)} 
+                className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors p-1"
+                type="button"
+              >
+                <X className="w-6 h-6" />
+              </button>
               <CheckCircle2 className="w-12 h-12 mx-auto mb-2 opacity-90" />
               <h2 className="text-2xl font-bold">
                 {bookingStep === 1 ? 'Tenant KYC Details' : bookingStep === 2 ? 'Digital Signature' : 'Confirm Booking'}
@@ -382,57 +414,86 @@ const PropertyDetails = () => {
                         <label className="block text-sm font-semibold text-secondary mb-1">Check-out Date</label>
                         <input type="date" required className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 outline-none text-sm" value={bookingDates.end_date} onChange={e => setBookingDates({...bookingDates, end_date: e.target.value})} />
                       </div>
+                      <div className="col-span-2">
+                        <label className="block text-sm font-semibold text-secondary mb-1">Number of Persons</label>
+                        <input type="number" min="1" max="10" required className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 outline-none text-sm" value={numberOfPersons} onChange={e => handlePersonCountChange(e.target.value)} />
+                      </div>
                     </div>
                   )}
-                  <div>
-                    <label className="block text-sm font-semibold text-secondary mb-1">Phone Number</label>
 
-                    <input 
-                      type="text" 
-                      className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none text-sm" 
-                      value={kycData.phone}
-                      onChange={e => setKycData({...kycData, phone: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-secondary mb-1">Current Address</label>
-                    <textarea 
-                      className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none text-sm" 
-                      rows="2"
-                      value={kycData.address}
-                      onChange={e => setKycData({...kycData, address: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Passport Size Photo</label>
-                    <input 
-                      type="file" 
-                      accept="image/*"
-                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
-                      onChange={e => setKycData({...kycData, photo: e.target.files[0]})}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Aadhaar Card (Image/PDF)</label>
-                    <input 
-                      type="file" 
-                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
-                      onChange={e => setKycData({...kycData, aadhaar: e.target.files[0]})}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Company / Student ID</label>
-                    <input 
-                      type="file" 
-                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
-                      onChange={e => setKycData({...kycData, company_id: e.target.files[0]})}
-                      required
-                    />
-                  </div>
+                  {kycData.map((person, index) => (
+                    <div key={index} className="space-y-4 pt-4 border-t border-gray-200 mt-4">
+                      <h3 className="font-bold text-gray-900">Person {index + 1} {index === 0 && '(Primary)'}</h3>
+                      <div>
+                        <label className="block text-sm font-semibold text-secondary mb-1">Phone Number</label>
+                        <input 
+                          type="text" 
+                          className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none text-sm" 
+                          value={person.phone}
+                          onChange={e => {
+                            const newKyc = [...kycData];
+                            newKyc[index].phone = e.target.value;
+                            setKycData(newKyc);
+                          }}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-secondary mb-1">Current Address</label>
+                        <textarea 
+                          className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none text-sm" 
+                          rows="2"
+                          value={person.address}
+                          onChange={e => {
+                            const newKyc = [...kycData];
+                            newKyc[index].address = e.target.value;
+                            setKycData(newKyc);
+                          }}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Passport Size Photo</label>
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
+                          onChange={e => {
+                            const newKyc = [...kycData];
+                            newKyc[index].photo = e.target.files[0];
+                            setKycData(newKyc);
+                          }}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Aadhaar Card (Image/PDF)</label>
+                        <input 
+                          type="file" 
+                          className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
+                          onChange={e => {
+                            const newKyc = [...kycData];
+                            newKyc[index].aadhaar = e.target.files[0];
+                            setKycData(newKyc);
+                          }}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Company / Student ID</label>
+                        <input 
+                          type="file" 
+                          className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
+                          onChange={e => {
+                            const newKyc = [...kycData];
+                            newKyc[index].company_id = e.target.files[0];
+                            setKycData(newKyc);
+                          }}
+                          required
+                        />
+                      </div>
+                    </div>
+                  ))}
 
                   <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100">
                     <button 
