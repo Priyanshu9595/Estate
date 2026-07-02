@@ -310,12 +310,17 @@ const PropertyDetails = () => {
                 </div>
                 
                 {user?.role === 'User' && unit.status === 'Available' && !hasActiveLease && (
-                  <button 
-                    onClick={() => setBookingUnit(unit)}
-                    className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-800 transition-colors shadow-sm"
-                  >
-                    Book Now
-                  </button>
+                  <div className="text-right flex flex-col items-end">
+                    <button 
+                      onClick={() => setBookingUnit(unit)}
+                      className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-800 transition-colors shadow-sm"
+                    >
+                      Book Now
+                    </button>
+                    <p className="text-[11px] text-gray-500 mt-1.5 font-semibold bg-gray-100 px-2 py-0.5 rounded-md">
+                      Pay ₹{calculateProratedRent(unit.rent_amount).amount + property.deposit_amount} today
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
@@ -333,6 +338,9 @@ const PropertyDetails = () => {
                 {bookingStep === 1 ? 'Tenant KYC Details' : bookingStep === 2 ? 'Digital Signature' : 'Confirm Booking'}
               </h2>
               <p className="opacity-90 mt-1">Room {bookingUnit.unit_no} at {property.name}</p>
+              <div className="mt-3 inline-block bg-white/20 px-4 py-1.5 rounded-full text-sm font-bold">
+                Total Payable Today: ₹{calculateProratedRent(bookingUnit.rent_amount).amount + property.deposit_amount}
+              </div>
             </div>
             
             <div className="p-6 overflow-y-auto">
