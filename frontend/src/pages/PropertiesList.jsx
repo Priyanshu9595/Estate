@@ -1,3 +1,4 @@
+import { API_URL } from '../config';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,7 +15,7 @@ const PropertiesList = () => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5000/api/properties');
+        const { data } = await axios.get('/api/properties');
         setProperties(data);
       } catch (error) {
         console.error('Failed to fetch properties', error);
@@ -80,7 +81,7 @@ const PropertiesList = () => {
             <div className="bg-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow h-full">
               <div className="h-48 bg-gray-200 overflow-hidden relative">
                 {property.images && property.images.length > 0 ? (
-                  <img src={`http://localhost:5000${property.images[0]}`} alt={property.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <img src={`${API_URL}${property.images[0]}`} alt={property.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
                     No Image

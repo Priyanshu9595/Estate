@@ -43,7 +43,7 @@ const Chatbot = () => {
     setIsLoading(true);
 
     try {
-      const { data } = await axios.post('http://localhost:5000/api/chatbot', { message: userMessage }, {
+      const { data } = await axios.post('/api/chatbot', { message: userMessage }, {
         headers: { Authorization: `Bearer ${user.token}` }
       });
       setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);

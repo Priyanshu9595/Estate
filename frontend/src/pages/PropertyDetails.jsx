@@ -1,3 +1,4 @@
+import { API_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -43,11 +44,11 @@ const PropertyDetails = () => {
 
   const fetchPropertyData = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/properties/${id}`);
+      const response = await axios.get(`/api/properties/${id}`);
       setData(response.data);
 
       if (user?.role === 'User') {
-        const leaseRes = await axios.get('http://localhost:5000/api/leases/my-lease');
+        const leaseRes = await axios.get('/api/leases/my-lease');
         if (leaseRes.data && leaseRes.data._id) {
           setHasActiveLease(true);
         }
@@ -101,7 +102,7 @@ const PropertyDetails = () => {
       const amount = bookingUnit.rent_amount + property.deposit_amount;
       
       // 1. Razorpay Order Creation
-      const orderRes = await axios.post('http://localhost:5000/api/payments/create-order', { amount });
+      const orderRes = await axios.post('/api/payments/create-order', { amount });
       
       if (!orderRes.data.id) {
          throw new Error('Order creation failed. Check backend Razorpay keys.');
@@ -119,7 +120,7 @@ const PropertyDetails = () => {
           try {
             setBookingLoading(true); // Re-enable loading during verify
             // 3. Verify Payment Signature on backend
-            await axios.post('http://localhost:5000/api/payments/verify', {
+            await axios.post('/api/payments/verify', {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature
@@ -131,19 +132,19 @@ const PropertyDetails = () => {
             formData.append('aadhaar', kycData.aadhaar);
             formData.append('company_id', kycData.company_id);
             
-            const uploadRes = await axios.post('http://localhost:5000/api/upload', formData, {
+            const uploadRes = await axios.post('/api/upload', formData, {
               headers: { 'Content-Type': 'multipart/form-data' }
             });
 
             // 5. Update User Profile with KYC urls and phone/address
-            await axios.put('http://localhost:5000/api/auth/profile', {
+            await axios.put('/api/auth/profile', {
               phone: kycData.phone,
               address: kycData.address,
               kyc_details: uploadRes.data.fileUrls
             });
 
             // 6. Finalize Lease Booking
-            await axios.post('http://localhost:5000/api/leases/book', {
+            await axios.post('/api/leases/book', {
               property_id: property._id,
               unit_id: bookingUnit._id
             });
@@ -544,7 +545,7 @@ const PropertyDetails = () => {
                 <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
                   {viewingTenantUnit.tenant.kyc_details?.[0] ? (
                     <img 
-                      src={`http://localhost:5000${viewingTenantUnit.tenant.kyc_details[0]}`} 
+                      src={`${API_URL}${viewingTenantUnit.tenant.kyc_details[0]}`} 
                       alt="Tenant Photo" 
                       className="w-20 h-20 rounded-full object-cover border-4 border-gray-50 shadow-sm"
                     />
@@ -607,7 +608,7 @@ const PropertyDetails = () => {
                       {viewingTenantUnit.tenant.kyc_details.slice(1).map((doc, idx) => (
                         <a 
                           key={idx}
-                          href={`http://localhost:5000${doc}`}
+                          href={`${API_URL}${doc}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-primary hover:shadow-sm transition-all group"

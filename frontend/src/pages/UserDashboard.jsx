@@ -26,16 +26,16 @@ const UserDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const [leaseRes, rentRes, maintenanceRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/leases/my-lease'),
-        axios.get('http://localhost:5000/api/rent/my-rent'),
-        axios.get('http://localhost:5000/api/maintenance/my-requests')
+        axios.get('/api/leases/my-lease'),
+        axios.get('/api/rent/my-rent'),
+        axios.get('/api/maintenance/my-requests')
       ]);
       setActiveLease(leaseRes.data);
       setNextRent(rentRes.data);
       setMaintenanceRequests(maintenanceRes.data);
 
       if (leaseRes.data && leaseRes.data._id) {
-        const historyRes = await axios.get(`http://localhost:5000/api/rent/lease/${leaseRes.data._id}`);
+        const historyRes = await axios.get(`/api/rent/lease/${leaseRes.data._id}`);
         setRentHistory(historyRes.data);
       }
     } catch (err) {
@@ -113,7 +113,7 @@ const UserDashboard = () => {
     }
     
     try {
-      const { data } = await axios.post(`http://localhost:5000/api/leases/${activeLease._id}/terminate`, bankDetails);
+      const { data } = await axios.post(`/api/leases/${activeLease._id}/terminate`, bankDetails);
       setRefundMessage(data.message);
       setActiveLease(null);
       setShowRefundModal(false);
@@ -136,7 +136,7 @@ const UserDashboard = () => {
     
     setIsSubmitting(true);
     try {
-      await axios.post('http://localhost:5000/api/maintenance', {
+      await axios.post('/api/maintenance', {
         property_id: activeLease.property_id._id,
         category,
         priority: 'Medium',

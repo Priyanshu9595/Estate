@@ -21,9 +21,9 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const [propRes, maintRes, leaseRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/properties'),
-        axios.get('http://localhost:5000/api/maintenance/admin-requests'),
-        axios.get('http://localhost:5000/api/leases/expiring')
+        axios.get('/api/properties'),
+        axios.get('/api/maintenance/admin-requests'),
+        axios.get('/api/leases/expiring')
       ]);
       setProperties(propRes.data);
       setMaintenance(maintRes.data);
@@ -42,7 +42,7 @@ const AdminDashboard = () => {
     }
     
     try {
-      await axios.put(`http://localhost:5000/api/maintenance/${reqId}/status`, { status: newStatus });
+      await axios.put(`/api/maintenance/${reqId}/status`, { status: newStatus });
       fetchDashboardData();
     } catch (err) {
       alert('Failed to update status');
@@ -52,7 +52,7 @@ const AdminDashboard = () => {
   const handleResolveSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`http://localhost:5000/api/maintenance/${resolvingReq._id}/status`, { 
+      await axios.put(`/api/maintenance/${resolvingReq._id}/status`, { 
         status: 'Resolved',
         cost: Number(resolveData.cost),
         technician_name: resolveData.technician_name,

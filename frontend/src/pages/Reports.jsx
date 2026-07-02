@@ -13,7 +13,7 @@ const Reports = () => {
 
   const fetchReports = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/reports/financials');
+      const { data } = await axios.get('/api/reports/financials');
       setRentData(data.rentData);
       setMaintenanceData(data.maintenanceData);
     } catch (err) {

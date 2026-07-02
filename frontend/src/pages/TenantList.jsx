@@ -13,7 +13,7 @@ const TenantList = () => {
 
   const fetchTenants = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/auth/tenants');
+      const { data } = await axios.get('/api/auth/tenants');
       setTenants(data);
     } catch (err) {
       console.error('Failed to fetch tenants', err);

@@ -1,3 +1,4 @@
+import { API_URL } from '../config';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -56,7 +57,7 @@ const OwnerDashboard = () => {
 
   const fetchPendingRefunds = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/leases/refunds/pending');
+      const { data } = await axios.get('/api/leases/refunds/pending');
       setPendingRefunds(data);
     } catch (err) {
       console.error('Failed to fetch pending refunds', err);
@@ -65,7 +66,7 @@ const OwnerDashboard = () => {
 
   const fetchExpiringLeases = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/leases/expiring');
+      const { data } = await axios.get('/api/leases/expiring');
       setExpiringLeases(data);
     } catch (err) {
       console.error('Failed to fetch expiring leases', err);
@@ -85,7 +86,7 @@ const OwnerDashboard = () => {
 
   const fetchExpenses = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/maintenance/all-requests');
+      const { data } = await axios.get('/api/maintenance/all-requests');
       setExpenses(data);
     } catch (err) {
       console.error('Failed to fetch expenses', err);
@@ -94,7 +95,7 @@ const OwnerDashboard = () => {
 
   const fetchProperties = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/properties');
+      const { data } = await axios.get('/api/properties');
       setProperties(data);
     } catch (err) {
       console.error('Failed to fetch properties', err);
@@ -103,7 +104,7 @@ const OwnerDashboard = () => {
 
   const fetchAdmins = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/auth/admins');
+      const { data } = await axios.get('/api/auth/admins');
       setAdmins(data);
     } catch (err) {
       console.error('Failed to fetch admins', err);
@@ -115,7 +116,7 @@ const OwnerDashboard = () => {
     setMessage('');
     setError('');
     try {
-      const { data } = await axios.post('http://localhost:5000/api/auth/create-admin', {
+      const { data } = await axios.post('/api/auth/create-admin', {
         name: adminName,
         email: adminEmail,
         password: adminPassword,
@@ -147,7 +148,7 @@ const OwnerDashboard = () => {
       if (newProperty.imageFile) {
         const formData = new FormData();
         formData.append('property_image', newProperty.imageFile);
-        const uploadRes = await axios.post('http://localhost:5000/api/upload', formData, {
+        const uploadRes = await axios.post('/api/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         if (uploadRes.data.fileUrls?.property_image) {
@@ -159,11 +160,11 @@ const OwnerDashboard = () => {
       
       if (editingPropertyId) {
         // Update existing property
-        const { data } = await axios.put(`http://localhost:5000/api/properties/${editingPropertyId}`, payload);
+        const { data } = await axios.put(`/api/properties/${editingPropertyId}`, payload);
         setPropMessage(`Property "${data.name}" updated successfully!`);
       } else {
         // Create new property
-        const { data } = await axios.post('http://localhost:5000/api/properties', payload);
+        const { data } = await axios.post('/api/properties', payload);
         setPropMessage(`Property "${data.name}" created successfully!`);
       }
       
@@ -195,7 +196,7 @@ const OwnerDashboard = () => {
     window.scrollTo({ top: 500, behavior: 'smooth' });
 
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/properties/${property._id}`);
+      const { data } = await axios.get(`/api/properties/${property._id}`);
       setNewProperty(prev => ({ ...prev, rooms: data.units.length }));
     } catch (err) {
       setPropError('Failed to load existing rooms');
@@ -209,7 +210,7 @@ const OwnerDashboard = () => {
     setPropMessage('');
     setPropError('');
     try {
-      await axios.delete(`http://localhost:5000/api/properties/${id}`);
+      await axios.delete(`/api/properties/${id}`);
       setPropMessage('Property deleted successfully!');
       fetchProperties();
     } catch (err) {
@@ -220,7 +221,7 @@ const OwnerDashboard = () => {
   const handleProcessRefund = async (leaseId) => {
     if (!window.confirm('Are you sure you want to mark this refund as paid? This will notify the tenant via email.')) return;
     try {
-      await axios.post(`http://localhost:5000/api/leases/${leaseId}/process-refund`);
+      await axios.post(`/api/leases/${leaseId}/process-refund`);
       alert('Refund processed successfully!');
       fetchPendingRefunds();
     } catch (err) {
@@ -505,7 +506,7 @@ const OwnerDashboard = () => {
               {newProperty.images?.length > 0 && (
                 <div className="mt-2 text-sm text-gray-500">
                   <p>Current Image:</p>
-                  <img src={`http://localhost:5000${newProperty.images[0]}`} alt="Property" className="h-20 w-32 object-cover rounded mt-1" />
+                  <img src={`${API_URL}${newProperty.images[0]}`} alt="Property" className="h-20 w-32 object-cover rounded mt-1" />
                 </div>
               )}
             </div>
