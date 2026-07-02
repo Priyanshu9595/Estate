@@ -93,13 +93,22 @@ const bookRoom = async (req, res) => {
     unit.status = 'Occupied';
     await unit.save();
 
+    // Calculate Prorated Rent for Current Month
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    const currentDate = today.getDate();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysRemaining = daysInMonth - currentDate + 1;
+    const proratedRent = Math.round(daysRemaining * (unit.rent_amount / daysInMonth));
+
     // Generate Rent for current month (Paid immediately during booking)
     await Rent.create({
       lease_id: lease._id,
-      month: new Date().toISOString().slice(0, 7),
-      rent_amount: unit.rent_amount,
-      due_date: new Date(),
-      paid_amount: unit.rent_amount,
+      month: today.toISOString().slice(0, 7),
+      rent_amount: proratedRent,
+      due_date: today,
+      paid_amount: proratedRent,
       due_amount: 0,
       status: 'Paid'
     });
@@ -131,7 +140,8 @@ const bookRoom = async (req, res) => {
         <ul>
           <li><strong>Property:</strong> ${property.name}</li>
           <li><strong>Unit/Room:</strong> ${unit.unit_no}</li>
-          <li><strong>Rent Amount:</strong> ₹${unit.rent_amount}/month</li>
+          <li><strong>Standard Rent:</strong> ₹${unit.rent_amount}/month</li>
+          <li><strong>First Month (Prorated for ${daysRemaining} days):</strong> ₹${proratedRent}</li>
           <li><strong>Security Deposit:</strong> ₹${property.deposit_amount || 0}</li>
           <li><strong>Start Date:</strong> ${start_date.toDateString()}</li>
         </ul>

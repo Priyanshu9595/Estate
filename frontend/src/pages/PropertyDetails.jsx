@@ -42,6 +42,17 @@ const PropertyDetails = () => {
     fetchPropertyData();
   }, [id]);
 
+  const calculateProratedRent = (rentAmount) => {
+    const today = new Date();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const daysRemaining = daysInMonth - today.getDate() + 1;
+    return {
+      amount: Math.round(daysRemaining * (rentAmount / daysInMonth)),
+      days: daysRemaining,
+      totalDays: daysInMonth
+    };
+  };
+
   const fetchPropertyData = async () => {
     try {
       const response = await axios.get(`/api/properties/${id}`);
@@ -99,7 +110,8 @@ const PropertyDetails = () => {
         throw new Error('Razorpay SDK failed to load. Are you online?');
       }
 
-      const amount = bookingUnit.rent_amount + property.deposit_amount;
+      const proratedRentObj = calculateProratedRent(bookingUnit.rent_amount);
+      const amount = proratedRentObj.amount + property.deposit_amount;
       
       // 1. Razorpay Order Creation
       const orderRes = await axios.post('/api/payments/create-order', { amount });
@@ -400,7 +412,8 @@ const PropertyDetails = () => {
                   <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6">
                     <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2"><PenTool size={18} /> Lease Agreement Terms</h3>
                     <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                      <li>Monthly Rent: ₹{bookingUnit.rent_amount}</li>
+                      <li>Standard Monthly Rent: ₹{bookingUnit.rent_amount}</li>
+                      <li>First Month Prorated Rent ({calculateProratedRent(bookingUnit.rent_amount).days} days): ₹{calculateProratedRent(bookingUnit.rent_amount).amount}</li>
                       <li>Advance Pay: ₹{property.deposit_amount}</li>
                       <li>Notice Period: 30 Days</li>
                       <li>Payment Date: 1st of every month</li>
@@ -478,8 +491,8 @@ const PropertyDetails = () => {
                 <div>
                   <div className="space-y-4 mb-8">
                     <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                      <span className="text-gray-600">First Month Rent</span>
-                      <span className="font-bold text-gray-900">₹{bookingUnit.rent_amount}</span>
+                      <span className="text-gray-600">First Month Rent (Prorated for {calculateProratedRent(bookingUnit.rent_amount).days} days)</span>
+                      <span className="font-bold text-gray-900">₹{calculateProratedRent(bookingUnit.rent_amount).amount}</span>
                     </div>
                     <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                       <span className="text-gray-600">Advance Pay</span>
@@ -487,7 +500,7 @@ const PropertyDetails = () => {
                     </div>
                     <div className="flex justify-between items-center pt-2">
                       <span className="text-gray-900 font-bold">Total Payable Now</span>
-                      <span className="text-2xl font-black text-primary">₹{bookingUnit.rent_amount + property.deposit_amount}</span>
+                      <span className="text-2xl font-black text-primary">₹{calculateProratedRent(bookingUnit.rent_amount).amount + property.deposit_amount}</span>
                     </div>
                   </div>
 
