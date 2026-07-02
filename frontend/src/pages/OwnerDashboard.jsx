@@ -507,7 +507,6 @@ const OwnerDashboard = () => {
               <input type="number" min="1" required value={newProperty.rooms} onChange={e => setNewProperty({...newProperty, rooms: e.target.value})} className="w-full border p-2 rounded-lg" placeholder="e.g. 50" />
             </div>
             <div className="md:col-span-2">
-              <div className="md:col-span-2">
               <label className="block text-sm font-medium mb-1">Description</label>
               <textarea rows="3" value={newProperty.description || ''} onChange={e => setNewProperty({...newProperty, description: e.target.value})} className="w-full border p-2 rounded-lg" placeholder="Enter property details, nearby landmarks, etc." />
             </div>
