@@ -64,7 +64,12 @@ const createProperty = async (req, res) => {
       return res.status(403).json({ message: 'Only Owners can create properties' });
     }
 
-    const { assigned_admin_id, name, type, address, city, state, rent_amount, deposit_amount, amenities, rooms, images } = req.body;
+    const { assigned_admin_id, name, type, address, city, state, rent_amount, deposit_amount, amenities, rooms, images, description } = req.body;
+
+    let parsedAmenities = amenities;
+    if (typeof amenities === 'string') {
+      parsedAmenities = amenities.split(',').map(a => a.trim()).filter(a => a);
+    }
 
     const property = await Property.create({
       owner_id: req.user._id,
@@ -76,7 +81,8 @@ const createProperty = async (req, res) => {
       state,
       rent_amount,
       deposit_amount,
-      amenities,
+      amenities: parsedAmenities || [],
+      description,
       images: images || [],
     });
 
@@ -164,7 +170,12 @@ const updateProperty = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    const { assigned_admin_id, name, type, address, city, state, rent_amount, deposit_amount, rooms, images } = req.body;
+    const { assigned_admin_id, name, type, address, city, state, rent_amount, deposit_amount, rooms, images, description, amenities } = req.body;
+
+    let parsedAmenities = amenities;
+    if (typeof amenities === 'string') {
+      parsedAmenities = amenities.split(',').map(a => a.trim()).filter(a => a);
+    }
     
     property.assigned_admin_id = assigned_admin_id || property.assigned_admin_id;
     property.name = name || property.name;
@@ -174,6 +185,8 @@ const updateProperty = async (req, res) => {
     property.state = state || property.state;
     property.rent_amount = rent_amount || property.rent_amount;
     property.deposit_amount = deposit_amount || property.deposit_amount;
+    if (description !== undefined) property.description = description;
+    if (parsedAmenities !== undefined) property.amenities = parsedAmenities;
     if (images !== undefined) property.images = images;
 
     const updatedProperty = await property.save();

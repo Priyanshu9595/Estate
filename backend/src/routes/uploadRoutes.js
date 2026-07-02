@@ -30,14 +30,19 @@ router.post('/', upload.fields([
   { name: 'photo', maxCount: 1 },
   { name: 'aadhaar', maxCount: 1 },
   { name: 'company_id', maxCount: 1 },
-  { name: 'property_image', maxCount: 1 }
+  { name: 'property_images', maxCount: 5 }
 ]), async (req, res) => {
   try {
     const fileUrls = {};
     if (req.files.photo) fileUrls.photo = await uploadFileToGridFS(req.files.photo[0]);
     if (req.files.aadhaar) fileUrls.aadhaar = await uploadFileToGridFS(req.files.aadhaar[0]);
     if (req.files.company_id) fileUrls.company_id = await uploadFileToGridFS(req.files.company_id[0]);
-    if (req.files.property_image) fileUrls.property_image = await uploadFileToGridFS(req.files.property_image[0]);
+    
+    if (req.files.property_images) {
+      fileUrls.property_images = await Promise.all(
+        req.files.property_images.map(file => uploadFileToGridFS(file))
+      );
+    }
 
     res.status(200).json({
       message: 'Files uploaded successfully to GridFS',

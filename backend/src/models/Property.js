@@ -24,6 +24,9 @@ const propertySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  description: {
+    type: String,
+  },
   city: {
     type: String,
     required: true,
