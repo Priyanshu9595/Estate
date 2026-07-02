@@ -99,7 +99,7 @@ const PropertiesList = () => {
                   }`}>
                     {(property.total_units > 0 && property.total_units === property.occupied_units) ? 'Full' : property.status}
                   </span>
-                  <span className="font-bold text-primary">₹{property.rent_amount}/mo</span>
+                  <span className="font-bold text-primary">₹{property.rent_amount}{property.type === 'DailyRoom' ? '/day' : '/mo'}</span>
                 </div>
               </div>
             </div>
