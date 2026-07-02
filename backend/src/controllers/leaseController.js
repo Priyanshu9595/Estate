@@ -57,7 +57,7 @@ const bookRoom = async (req, res) => {
       return res.status(403).json({ message: 'Only Users can book rooms' });
     }
 
-    const { property_id, unit_id } = req.body;
+    const { property_id, unit_id, start_date, end_date } = req.body;
 
     const unit = await Unit.findById(unit_id);
     if (!unit) return res.status(404).json({ message: 'Room not found' });
@@ -73,17 +73,23 @@ const bookRoom = async (req, res) => {
     }
 
     // Set dates
-    const start_date = new Date();
-    const end_date = new Date();
-    end_date.setMonth(end_date.getMonth() + 11); // Standard 11 month lease
+    let lease_start_date = new Date();
+    let lease_end_date = new Date();
+    
+    if (property.type === 'DailyRoom') {
+      lease_start_date = new Date(start_date);
+      lease_end_date = new Date(end_date);
+    } else {
+      lease_end_date.setMonth(lease_end_date.getMonth() + 11); // Standard 11 month lease
+    }
 
     // Create Lease
     const lease = await Lease.create({
       property_id,
       unit_id,
       user_id: req.user._id,
-      start_date,
-      end_date,
+      start_date: lease_start_date,
+      end_date: lease_end_date,
       rent_amount: unit.rent_amount,
       deposit: property.deposit_amount || 0,
       status: 'Active',
@@ -93,42 +99,62 @@ const bookRoom = async (req, res) => {
     unit.status = 'Occupied';
     await unit.save();
 
-    // Calculate Prorated Rent for Current Month
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-    const currentDate = today.getDate();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const daysRemaining = daysInMonth - currentDate + 1;
-    const proratedRent = Math.round(daysRemaining * (unit.rent_amount / daysInMonth));
+    let daysRemaining = 0;
+    let proratedRent = 0;
 
-    // Generate Rent for current month (Paid immediately during booking)
-    await Rent.create({
-      lease_id: lease._id,
-      month: today.toISOString().slice(0, 7),
-      rent_amount: proratedRent,
-      due_date: today,
-      paid_amount: proratedRent,
-      due_amount: 0,
-      status: 'Paid'
-    });
+    if (property.type === 'DailyRoom') {
+      // For DailyRoom, calculate total price
+      const diffTime = Math.abs(lease_end_date - lease_start_date);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const totalAmount = diffDays * unit.rent_amount;
 
-    // Generate Rent for NEXT month (Pending, due in 30 days)
-    const nextMonth = new Date();
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    
-    const nextDueDate = new Date();
-    nextDueDate.setDate(nextDueDate.getDate() + 30);
+      await Rent.create({
+        lease_id: lease._id,
+        month: lease_start_date.toISOString().slice(0, 7),
+        rent_amount: totalAmount,
+        due_date: lease_start_date,
+        paid_amount: totalAmount,
+        due_amount: 0,
+        status: 'Paid'
+      });
+    } else {
+      // Calculate Prorated Rent for Current Month
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth();
+      const currentDate = today.getDate();
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      daysRemaining = daysInMonth - currentDate + 1;
+      proratedRent = Math.round(daysRemaining * (unit.rent_amount / daysInMonth));
 
-    await Rent.create({
-      lease_id: lease._id,
-      month: nextMonth.toISOString().slice(0, 7),
-      rent_amount: unit.rent_amount,
-      due_date: nextDueDate,
-      paid_amount: 0,
-      due_amount: unit.rent_amount,
-      status: 'Pending'
-    });
+      // Generate Rent for current month (Paid immediately during booking)
+      await Rent.create({
+        lease_id: lease._id,
+        month: today.toISOString().slice(0, 7),
+        rent_amount: proratedRent,
+        due_date: today,
+        paid_amount: proratedRent,
+        due_amount: 0,
+        status: 'Paid'
+      });
+
+      // Generate Rent for NEXT month (Pending, due in 30 days)
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      
+      const nextDueDate = new Date();
+      nextDueDate.setDate(nextDueDate.getDate() + 30);
+
+      await Rent.create({
+        lease_id: lease._id,
+        month: nextMonth.toISOString().slice(0, 7),
+        rent_amount: unit.rent_amount,
+        due_date: nextDueDate,
+        paid_amount: 0,
+        due_amount: unit.rent_amount,
+        status: 'Pending'
+      });
+    }
 
     // Send Confirmation Email
     try {
@@ -140,10 +166,11 @@ const bookRoom = async (req, res) => {
         <ul>
           <li><strong>Property:</strong> ${property.name}</li>
           <li><strong>Unit/Room:</strong> ${unit.unit_no}</li>
-          <li><strong>Standard Rent:</strong> ₹${unit.rent_amount}/month</li>
-          <li><strong>First Month (Prorated for ${daysRemaining} days):</strong> ₹${proratedRent}</li>
+          <li><strong>${property.type === 'DailyRoom' ? 'Daily Rate' : 'Standard Rent'}:</strong> ₹${unit.rent_amount}${property.type === 'DailyRoom' ? '/day' : '/month'}</li>
+          ${property.type !== 'DailyRoom' ? `<li><strong>First Month (Prorated for ${daysRemaining} days):</strong> ₹${proratedRent}</li>` : ''}
           <li><strong>Security Deposit:</strong> ₹${property.deposit_amount || 0}</li>
-          <li><strong>Start Date:</strong> ${start_date.toDateString()}</li>
+          <li><strong>Start Date:</strong> ${lease_start_date.toDateString()}</li>
+          ${property.type === 'DailyRoom' ? `<li><strong>End Date:</strong> ${lease_end_date.toDateString()}</li>` : ''}
         </ul>
         <p>Welcome to EstateFlow!</p>
       `;

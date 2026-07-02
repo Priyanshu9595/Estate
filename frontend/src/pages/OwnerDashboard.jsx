@@ -460,6 +460,8 @@ const OwnerDashboard = () => {
                 <option>House</option>
                 <option>Commercial</option>
                 <option>PG</option>
+                <option>Flat</option>
+                <option>DailyRoom</option>
               </select>
             </div>
             <div className="md:col-span-2">

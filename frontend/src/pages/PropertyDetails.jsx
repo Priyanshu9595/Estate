@@ -22,6 +22,7 @@ const PropertyDetails = () => {
   const [bookingUnit, setBookingUnit] = useState(null);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState('');
+  const [bookingDates, setBookingDates] = useState({ start_date: '', end_date: '' });
   
   // Tenant Details Modal State
   const [viewingTenantUnit, setViewingTenantUnit] = useState(null);
@@ -41,6 +42,13 @@ const PropertyDetails = () => {
   useEffect(() => {
     fetchPropertyData();
   }, [id]);
+
+  const calculateDailyAmount = (rentAmount) => {
+    if (!bookingDates.start_date || !bookingDates.end_date) return 0;
+    const diffTime = Math.abs(new Date(bookingDates.end_date) - new Date(bookingDates.start_date));
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays * rentAmount : rentAmount;
+  };
 
   const calculateProratedRent = (rentAmount) => {
     const today = new Date();
@@ -79,6 +87,10 @@ const PropertyDetails = () => {
 
   const handleKycNext = (e) => {
     e.preventDefault();
+    if (property.type === 'DailyRoom' && (!bookingDates.start_date || !bookingDates.end_date)) {
+      setBookingError('Please select check-in and check-out dates.');
+      return;
+    }
     if (!kycData.phone || !kycData.address || !kycData.photo || !kycData.aadhaar || !kycData.company_id) {
       setBookingError('Please fill all fields and select all documents.');
       return;
@@ -110,8 +122,13 @@ const PropertyDetails = () => {
         throw new Error('Razorpay SDK failed to load. Are you online?');
       }
 
-      const proratedRentObj = calculateProratedRent(bookingUnit.rent_amount);
-      const amount = proratedRentObj.amount + property.deposit_amount;
+      let amount = 0;
+      if (property.type === 'DailyRoom') {
+        amount = calculateDailyAmount(bookingUnit.rent_amount) + (property.deposit_amount || 0);
+      } else {
+        const proratedRentObj = calculateProratedRent(bookingUnit.rent_amount);
+        amount = proratedRentObj.amount + property.deposit_amount;
+      }
       
       // 1. Razorpay Order Creation
       const orderRes = await axios.post('/api/payments/create-order', { amount });
@@ -158,7 +175,8 @@ const PropertyDetails = () => {
             // 6. Finalize Lease Booking
             await axios.post('/api/leases/book', {
               property_id: property._id,
-              unit_id: bookingUnit._id
+              unit_id: bookingUnit._id,
+              ...(property.type === 'DailyRoom' && { start_date: bookingDates.start_date, end_date: bookingDates.end_date })
             });
 
             // 7. Generate and Download PDF
@@ -318,7 +336,7 @@ const PropertyDetails = () => {
                       Book Now
                     </button>
                     <p className="text-[11px] text-gray-500 mt-1.5 font-semibold bg-gray-100 px-2 py-0.5 rounded-md">
-                      Pay ₹{calculateProratedRent(unit.rent_amount).amount + property.deposit_amount} today
+                      {property.type === 'DailyRoom' ? `Pay ₹${unit.rent_amount} / day` : `Pay ₹${calculateProratedRent(unit.rent_amount).amount + property.deposit_amount} today`}
                     </p>
                   </div>
                 )}
@@ -339,7 +357,12 @@ const PropertyDetails = () => {
               </h2>
               <p className="opacity-90 mt-1">Room {bookingUnit.unit_no} at {property.name}</p>
               <div className="mt-3 inline-block bg-white/20 px-4 py-1.5 rounded-full text-sm font-bold">
-                Total Payable Today: ₹{calculateProratedRent(bookingUnit.rent_amount).amount + property.deposit_amount}
+                {property.type === 'DailyRoom' ? (
+                  bookingDates.start_date && bookingDates.end_date ? 
+                  `Total Payable: ₹${calculateDailyAmount(bookingUnit.rent_amount) + (property.deposit_amount || 0)}` : 'Select dates to see price'
+                ) : (
+                  `Total Payable Today: ₹${calculateProratedRent(bookingUnit.rent_amount).amount + property.deposit_amount}`
+                )}
               </div>
             </div>
             
@@ -348,8 +371,22 @@ const PropertyDetails = () => {
               
               {bookingStep === 1 && (
                 <form onSubmit={handleKycNext} className="space-y-4">
+
+                  {property.type === 'DailyRoom' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-secondary mb-1">Check-in Date</label>
+                        <input type="date" required className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 outline-none text-sm" value={bookingDates.start_date} onChange={e => setBookingDates({...bookingDates, start_date: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-secondary mb-1">Check-out Date</label>
+                        <input type="date" required className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 outline-none text-sm" value={bookingDates.end_date} onChange={e => setBookingDates({...bookingDates, end_date: e.target.value})} />
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm font-semibold text-secondary mb-1">Phone Number</label>
+
                     <input 
                       type="text" 
                       className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none text-sm" 
@@ -419,13 +456,26 @@ const PropertyDetails = () => {
                 <div>
                   <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6">
                     <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2"><PenTool size={18} /> Lease Agreement Terms</h3>
+
                     <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                      <li>Standard Monthly Rent: ₹{bookingUnit.rent_amount}</li>
-                      <li>First Month Prorated Rent ({calculateProratedRent(bookingUnit.rent_amount).days} days): ₹{calculateProratedRent(bookingUnit.rent_amount).amount}</li>
-                      <li>Advance Pay: ₹{property.deposit_amount}</li>
-                      <li>Notice Period: 30 Days</li>
-                      <li>Payment Date: 1st of every month</li>
+                      {property.type === 'DailyRoom' ? (
+                        <>
+                          <li>Daily Rate: ₹{bookingUnit.rent_amount}</li>
+                          <li>Total Stay: {calculateDailyAmount(bookingUnit.rent_amount) / bookingUnit.rent_amount || 0} days</li>
+                          <li>Security Deposit: ₹{property.deposit_amount || 0}</li>
+                          <li>Total Payable: ₹{calculateDailyAmount(bookingUnit.rent_amount) + (property.deposit_amount || 0)}</li>
+                        </>
+                      ) : (
+                        <>
+                          <li>Standard Monthly Rent: ₹{bookingUnit.rent_amount}</li>
+                          <li>First Month Prorated Rent ({calculateProratedRent(bookingUnit.rent_amount).days} days): ₹{calculateProratedRent(bookingUnit.rent_amount).amount}</li>
+                          <li>Advance Pay: ₹{property.deposit_amount}</li>
+                          <li>Notice Period: 30 Days</li>
+                          <li>Payment Date: 1st of every month</li>
+                        </>
+                      )}
                     </ul>
+
                   </div>
                   
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Please sign below to agree to the terms:</label>
@@ -497,20 +547,29 @@ const PropertyDetails = () => {
 
               {bookingStep === 3 && (
                 <div>
+
                   <div className="space-y-4 mb-8">
+                    {property.type === 'DailyRoom' ? (
+                      <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+                        <span className="text-gray-600">Total Stay ({calculateDailyAmount(bookingUnit.rent_amount) / bookingUnit.rent_amount || 0} days)</span>
+                        <span className="font-bold text-gray-900">₹{calculateDailyAmount(bookingUnit.rent_amount)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+                        <span className="text-gray-600">First Month Rent (Prorated for {calculateProratedRent(bookingUnit.rent_amount).days} days)</span>
+                        <span className="font-bold text-gray-900">₹{calculateProratedRent(bookingUnit.rent_amount).amount}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                      <span className="text-gray-600">First Month Rent (Prorated for {calculateProratedRent(bookingUnit.rent_amount).days} days)</span>
-                      <span className="font-bold text-gray-900">₹{calculateProratedRent(bookingUnit.rent_amount).amount}</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                      <span className="text-gray-600">Advance Pay</span>
-                      <span className="font-bold text-gray-900">₹{property.deposit_amount}</span>
+                      <span className="text-gray-600">Advance Pay / Deposit</span>
+                      <span className="font-bold text-gray-900">₹{property.deposit_amount || 0}</span>
                     </div>
                     <div className="flex justify-between items-center pt-2">
                       <span className="text-gray-900 font-bold">Total Payable Now</span>
-                      <span className="text-2xl font-black text-primary">₹{calculateProratedRent(bookingUnit.rent_amount).amount + property.deposit_amount}</span>
+                      <span className="text-2xl font-black text-primary">₹{property.type === 'DailyRoom' ? calculateDailyAmount(bookingUnit.rent_amount) + (property.deposit_amount || 0) : calculateProratedRent(bookingUnit.rent_amount).amount + property.deposit_amount}</span>
                     </div>
                   </div>
+
 
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-6 flex items-center justify-center gap-2">
                     <span className="font-semibold text-gray-700">Secured by</span>
