@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="22" fill="#1e3a8a"/>
+  
+  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Center Building -->
+    <path d="M38 72 V 28 H 62 V 72" />
+    
+    <!-- Left Building -->
+    <path d="M24 72 V 46 H 38" />
+    
+    <!-- Right Building -->
+    <path d="M76 72 V 46 H 62" />
+    
+    <!-- Central Windows -->
+    <line x1="45" y1="40" x2="55" y2="40" />
+    <line x1="45" y1="52" x2="55" y2="52" />
+    
+    <!-- Central Arch Door -->
+    <path d="M45 72 V 66 A 5 5 0 0 1 55 66 V 72" />
+    
+    <!-- Bottom Base Line -->
+    <line x1="20" y1="72" x2="80" y2="72" />
+  </g>
+</svg>
