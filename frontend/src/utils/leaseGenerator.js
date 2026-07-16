@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 export const generateLeasePDF = ({
   tenantName,
@@ -51,7 +51,7 @@ export const generateLeasePDF = ({
   doc.setFont('helvetica', 'bold');
   doc.text('3. LEASE TERMS & FINANCIALS', 20, 95);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: 100,
     margin: { left: 20, right: 20 },
     headStyles: { fillColor: [59, 130, 246] }, // primary blue
@@ -68,7 +68,7 @@ export const generateLeasePDF = ({
   });
 
   // Terms and Conditions
-  const finalY = doc.lastAutoTable.finalY + 15;
+  const finalY = (doc.lastAutoTable?.finalY || 120) + 15;
   doc.setFont('helvetica', 'bold');
   doc.text('4. TERMS AND CONDITIONS', 20, finalY);
   

@@ -181,6 +181,7 @@ const PropertyDetails = () => {
         description: `Booking for ${property.name} - Room ${bookingUnit.unit_no}`,
         order_id: orderRes.data.id,
         handler: async function (response) {
+          let completionStep = 'payment verification';
           try {
             setBookingLoading(true); // Re-enable loading during verify
             // 3. Verify Payment Signature on backend
@@ -192,6 +193,7 @@ const PropertyDetails = () => {
 
             // 4. Upload KYC files for all persons. The upload API returns an object:
             // { photo, aadhaar, company_id }, so keep the first person's docs for the profile.
+            completionStep = 'KYC upload';
             let primaryKycDetails = null;
             for (let i = 0; i < kycData.length; i++) {
               const formData = new FormData();
@@ -209,6 +211,7 @@ const PropertyDetails = () => {
             }
 
             // 5. Update User Profile with KYC urls and phone/address (from main person)
+            completionStep = 'profile update';
             await axios.put('/api/auth/profile', {
               phone: kycData[0].phone,
               address: kycData[0].address,
@@ -216,6 +219,7 @@ const PropertyDetails = () => {
             });
 
             // 6. Finalize Lease Booking
+            completionStep = 'lease booking';
             await axios.post('/api/leases/book', {
               property_id: property._id,
               unit_id: bookingUnit._id,
@@ -223,16 +227,20 @@ const PropertyDetails = () => {
             });
 
             // 7. Generate and Download PDF
-            generateLeasePDF({
-              tenantName: user?.name,
-              ownerName: 'EstateFlow Admin',
-              propertyName: property.name,
-              unitNo: bookingUnit.unit_no,
-              rentAmount: bookingUnit.rent_amount,
-              depositAmount: property.deposit_amount,
-              startDate: new Date(),
-              tenantSignature: signatureData
-            });
+            try {
+              generateLeasePDF({
+                tenantName: user?.name,
+                ownerName: 'EstateFlow Admin',
+                propertyName: property.name,
+                unitNo: bookingUnit.unit_no,
+                rentAmount: bookingUnit.rent_amount,
+                depositAmount: property.deposit_amount,
+                startDate: new Date(),
+                tenantSignature: signatureData
+              });
+            } catch (pdfError) {
+              console.error('Lease PDF generation failed after booking:', pdfError);
+            }
 
             // Close modal and redirect
             setBookingUnit(null);
@@ -241,7 +249,8 @@ const PropertyDetails = () => {
             navigate('/user-dashboard');
           } catch (verifyErr) {
              console.error(verifyErr);
-             setBookingError(verifyErr.response?.data?.message || 'Payment was successful, but booking completion failed. Please contact support with your Razorpay payment ID.');
+             const paymentId = response.razorpay_payment_id ? ` Payment ID: ${response.razorpay_payment_id}.` : '';
+             setBookingError(verifyErr.response?.data?.message || `Payment was successful, but ${completionStep} failed.${paymentId} Please contact support.`);
              setBookingLoading(false);
           }
         },
