@@ -174,14 +174,16 @@ const bookRoom = async (req, res) => {
         </ul>
         <p>Welcome to EstateFlow!</p>
       `;
-      await sendEmail({
+      // Run email sending in background without blocking
+      sendEmail({
         email: req.user.email,
         subject: 'Room Booking Confirmation - EstateFlow',
         html: emailHtml,
+      }).catch(emailError => {
+        console.error('Background email sending failed:', emailError);
       });
-    } catch (emailError) {
-      console.error('Email sending failed:', emailError);
-      // We don't fail the booking if email fails
+    } catch (error) {
+      console.error('Email configuration error:', error);
     }
 
     res.status(201).json({ message: 'Room booked successfully!', lease });
@@ -342,13 +344,15 @@ const processRefund = async (req, res) => {
         <p>It may take 2-3 business days to reflect in your account.</p>
         <p>Thank you for staying with us!</p>
       `;
-      await sendEmail({
+      sendEmail({
         email: lease.user_id.email,
         subject: 'Refund Processed - EstateFlow',
         html: emailHtml,
+      }).catch(emailError => {
+        console.error('Failed to send refund email:', emailError);
       });
-    } catch (emailError) {
-      console.error('Failed to send refund email:', emailError);
+    } catch (error) {
+      console.error('Email configuration error:', error);
     }
 
     res.status(200).json({ message: 'Refund processed successfully.' });
