@@ -61,16 +61,27 @@ const bookRoom = async (req, res) => {
 
     const unit = await Unit.findById(unit_id);
     if (!unit) return res.status(404).json({ message: 'Room not found' });
-    if (unit.status !== 'Available') return res.status(400).json({ message: 'Room is not available' });
 
     const property = await Property.findById(property_id);
     if (!property) return res.status(404).json({ message: 'Property not found' });
 
-    // Check if user already has an active lease
+    // Treat retries after a successful payment as success instead of failing the booking flow.
     const existingLease = await Lease.findOne({ user_id: req.user._id, status: 'Active' });
     if (existingLease) {
+      if (
+        existingLease.property_id.toString() === property_id.toString() &&
+        existingLease.unit_id.toString() === unit_id.toString()
+      ) {
+        return res.status(200).json({
+          message: 'Room already booked successfully!',
+          lease: existingLease,
+          alreadyBooked: true,
+        });
+      }
       return res.status(400).json({ message: 'You already have an active booking.' });
     }
+
+    if (unit.status !== 'Available') return res.status(400).json({ message: 'Room is not available' });
 
     // Set dates
     let lease_start_date = new Date();
@@ -174,10 +185,12 @@ const bookRoom = async (req, res) => {
         </ul>
         <p>Welcome to EstateFlow!</p>
       `;
-      await sendEmail({
+      sendEmail({
         email: req.user.email,
         subject: 'Room Booking Confirmation - EstateFlow',
         html: emailHtml,
+      }).catch((emailError) => {
+        console.error('Booking confirmation email failed:', emailError.message);
       });
     } catch (emailError) {
       console.error('Booking confirmation email failed:', emailError.message);

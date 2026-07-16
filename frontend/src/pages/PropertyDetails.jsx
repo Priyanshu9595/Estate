@@ -249,6 +249,21 @@ const PropertyDetails = () => {
             navigate('/user-dashboard');
           } catch (verifyErr) {
              console.error(verifyErr);
+             if (completionStep === 'lease booking') {
+               try {
+                 const leaseRes = await axios.get('/api/leases/my-lease');
+                 const bookedUnitId = leaseRes.data?.unit_id?._id || leaseRes.data?.unit_id;
+                 if (bookedUnitId && bookedUnitId.toString() === bookingUnit._id.toString()) {
+                   setBookingUnit(null);
+                   setBookingStep(1);
+                   setSignatureData(null);
+                   navigate('/user-dashboard');
+                   return;
+                 }
+               } catch (leaseCheckErr) {
+                 console.error('Could not confirm booking after lease booking failure:', leaseCheckErr);
+               }
+             }
              const paymentId = response.razorpay_payment_id ? ` Payment ID: ${response.razorpay_payment_id}.` : '';
              setBookingError(verifyErr.response?.data?.message || `Payment was successful, but ${completionStep} failed.${paymentId} Please contact support.`);
              setBookingLoading(false);
