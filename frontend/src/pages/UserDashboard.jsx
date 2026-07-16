@@ -4,12 +4,15 @@ import { useAuth } from '../context/AuthContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+import { Star } from 'lucide-react';
+
 const UserDashboard = () => {
   const { user } = useAuth();
   const [activeLease, setActiveLease] = useState(null);
   const [nextRent, setNextRent] = useState(null);
   const [rentHistory, setRentHistory] = useState([]);
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
+  const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refundMessage, setRefundMessage] = useState('');
   const [showRefundModal, setShowRefundModal] = useState(false);
@@ -19,20 +22,29 @@ const UserDashboard = () => {
     ifsc_code: ''
   });
 
+  // Review Form State
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState('');
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
     try {
-      const [leaseRes, rentRes, maintenanceRes] = await Promise.all([
+      const [leaseRes, rentRes, maintenanceRes, noticeRes] = await Promise.all([
         axios.get('/api/leases/my-lease'),
         axios.get('/api/rent/my-rent'),
-        axios.get('/api/maintenance/my-requests')
+        axios.get('/api/maintenance/my-requests'),
+        axios.get('/api/notices/my-notices').catch(() => ({ data: [] }))
       ]);
       setActiveLease(leaseRes.data);
       setNextRent(rentRes.data);
       setMaintenanceRequests(maintenanceRes.data);
+      setNotices(noticeRes.data || []);
 
       if (leaseRes.data && leaseRes.data._id) {
         const historyRes = await axios.get(`/api/rent/lease/${leaseRes.data._id}`);
@@ -152,14 +164,51 @@ const UserDashboard = () => {
     }
   };
   
-  // This is a simplified fetch, we'd ideally fetch lease by user ID
-  // But our backend MVP currently has getLeasesByProperty
-  // For the sake of the MVP UI placeholder, we'll just show the user's name
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!activeLease) return;
+    setReviewSubmitting(true);
+    setReviewMessage('');
+    try {
+      await axios.post('/api/reviews', {
+        property_id: activeLease.property_id._id,
+        rating,
+        comment
+      });
+      setReviewMessage('Thank you for your review!');
+      setTimeout(() => setShowReviewForm(false), 2000);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to submit review');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold text-gray-900 mb-2">My Dashboard</h1>
       <p className="text-gray-600 mb-8">Welcome back, {user?.name}. Manage your rentals and requests here.</p>
+
+      {/* Notice Board */}
+      {notices.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="text-2xl">📢</span> Notice Board
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {notices.map(notice => (
+              <div key={notice._id} className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-sm">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-bold text-yellow-900">{notice.title}</h3>
+                  <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">{new Date(notice.createdAt).toLocaleDateString()}</span>
+                </div>
+                <p className="text-sm text-yellow-800 leading-relaxed">{notice.content}</p>
+                <p className="text-xs text-yellow-600 mt-3 font-semibold">— Sent by Property Management</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
@@ -231,6 +280,52 @@ const UserDashboard = () => {
                 >
                   Leave Room & Claim Refund
                 </button>
+              </div>
+
+              {/* Rate Property Section */}
+              <div className="pt-6 mt-6 border-t border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Star className="w-5 h-5 text-yellow-500 fill-yellow-500" /> Rate this Property</h3>
+                  <button 
+                    onClick={() => setShowReviewForm(!showReviewForm)}
+                    className="text-primary text-sm font-medium hover:underline"
+                  >
+                    {showReviewForm ? 'Cancel' : 'Write a Review'}
+                  </button>
+                </div>
+                
+                {showReviewForm && (
+                  <form onSubmit={handleReviewSubmit} className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
+                    {reviewMessage && <div className="mb-3 text-green-700 font-medium text-sm">{reviewMessage}</div>}
+                    <div className="flex items-center gap-2 mb-3">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setRating(star)}
+                          className="focus:outline-none transition-transform hover:scale-110"
+                        >
+                          <Star className={`w-8 h-8 ${rating >= star ? 'fill-yellow-500 text-yellow-500' : 'fill-gray-300 text-gray-300'}`} />
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      required
+                      placeholder="Share your experience (e.g. Cleanliness, Management, Neighbors...)"
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      className="w-full border border-gray-200 p-3 rounded-lg outline-none focus:ring-2 focus:ring-yellow-400 text-sm mb-3 bg-white"
+                      rows="3"
+                    ></textarea>
+                    <button 
+                      type="submit" 
+                      disabled={reviewSubmitting}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold px-6 py-2 rounded-lg text-sm transition-colors shadow-sm disabled:opacity-70"
+                    >
+                      {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+                    </button>
+                  </form>
+                )}
               </div>
 
               {/* Payment History */}

@@ -2,7 +2,7 @@ import { API_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Building2, MapPin, IndianRupee, ArrowLeft, CheckCircle2, User, Phone, Mail, FileText, Calendar, X, PenTool } from 'lucide-react';
+import { Building2, MapPin, IndianRupee, ArrowLeft, CheckCircle2, User, Phone, Mail, FileText, Calendar, X, PenTool, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import SignatureCanvas from 'react-signature-canvas';
 import { useRef } from 'react';
@@ -17,6 +17,8 @@ const PropertyDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [hasActiveLease, setHasActiveLease] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [averageRating, setAverageRating] = useState(0);
   
   // Booking Modal State
   const [bookingUnit, setBookingUnit] = useState(null);
@@ -87,6 +89,10 @@ const PropertyDetails = () => {
     try {
       const response = await axios.get(`/api/properties/${id}`);
       setData(response.data);
+
+      const reviewRes = await axios.get(`/api/reviews/${id}`).catch(() => ({ data: { reviews: [], averageRating: 0, totalReviews: 0 } }));
+      setReviews(reviewRes.data.reviews || []);
+      setAverageRating(reviewRes.data.averageRating || 0);
 
       if (user?.role === 'User') {
         const leaseRes = await axios.get('/api/leases/my-lease');
@@ -184,8 +190,9 @@ const PropertyDetails = () => {
               razorpay_signature: response.razorpay_signature
             });
 
-            // 4. Upload KYC files for all persons
-            let allKycUrls = [];
+            // 4. Upload KYC files for all persons. The upload API returns an object:
+            // { photo, aadhaar, company_id }, so keep the first person's docs for the profile.
+            let primaryKycDetails = null;
             for (let i = 0; i < kycData.length; i++) {
               const formData = new FormData();
               formData.append('photo', kycData[i].photo);
@@ -196,14 +203,16 @@ const PropertyDetails = () => {
                 headers: { 'Content-Type': 'multipart/form-data' }
               });
               
-              allKycUrls = [...allKycUrls, ...uploadRes.data.fileUrls];
+              if (i === 0) {
+                primaryKycDetails = uploadRes.data.fileUrls;
+              }
             }
 
             // 5. Update User Profile with KYC urls and phone/address (from main person)
             await axios.put('/api/auth/profile', {
               phone: kycData[0].phone,
               address: kycData[0].address,
-              kyc_details: allKycUrls
+              kyc_details: primaryKycDetails
             });
 
             // 6. Finalize Lease Booking
@@ -232,14 +241,14 @@ const PropertyDetails = () => {
             navigate('/user-dashboard');
           } catch (verifyErr) {
              console.error(verifyErr);
-             setBookingError(verifyErr.response?.data?.message || 'Payment verification or booking failed after payment.');
+             setBookingError(verifyErr.response?.data?.message || 'Payment was successful, but booking completion failed. Please contact support with your Razorpay payment ID.');
              setBookingLoading(false);
           }
         },
         prefill: {
           name: user?.name,
           email: user?.email,
-          contact: kycData.phone
+          contact: kycData[0]?.phone || user?.phone || ''
         },
         theme: {
           color: '#3399cc'
@@ -294,10 +303,22 @@ const PropertyDetails = () => {
               <Building2 className="text-primary w-8 h-8" />
               {property.name}
             </h1>
-            <p className="text-gray-500 flex items-center gap-2 mt-2">
-              <MapPin className="w-4 h-4" />
-              {property.address}, {property.city}, {property.state}
-            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <p className="text-gray-500 flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                {property.address}, {property.city}, {property.state}
+              </p>
+              {averageRating > 0 && (
+                <>
+                  <span className="text-gray-300">•</span>
+                  <div className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-md border border-yellow-200">
+                    <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                    <span className="font-bold text-sm">{averageRating.toFixed(1)}</span>
+                    <span className="text-xs text-yellow-600 font-medium">({reviews.length})</span>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
           <div className="bg-primary/10 px-4 py-2 rounded-xl border border-primary/20">
             <p className="text-sm text-primary font-semibold uppercase tracking-wider">{property.type}</p>
@@ -734,9 +755,9 @@ const PropertyDetails = () => {
                 
                 {/* Profile Section */}
                 <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
-                  {viewingTenantUnit.tenant.kyc_details?.[0] ? (
+                  {viewingTenantUnit.tenant.kyc_details?.photo ? (
                     <img 
-                      src={`${API_URL}${viewingTenantUnit.tenant.kyc_details[0]}`} 
+                      src={`${API_URL}${viewingTenantUnit.tenant.kyc_details.photo}`} 
                       alt="Tenant Photo" 
                       className="w-20 h-20 rounded-full object-cover border-4 border-gray-50 shadow-sm"
                     />
@@ -790,16 +811,19 @@ const PropertyDetails = () => {
                 )}
 
                 {/* KYC Documents */}
-                {viewingTenantUnit.tenant.kyc_details && viewingTenantUnit.tenant.kyc_details.length > 1 && (
+                {viewingTenantUnit.tenant.kyc_details && (viewingTenantUnit.tenant.kyc_details.aadhaar || viewingTenantUnit.tenant.kyc_details.company_id) && (
                   <div>
                     <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-primary" /> KYC Documents
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
-                      {viewingTenantUnit.tenant.kyc_details.slice(1).map((doc, idx) => (
+                      {[
+                        { label: 'Aadhaar Card', url: viewingTenantUnit.tenant.kyc_details.aadhaar },
+                        { label: 'Company ID', url: viewingTenantUnit.tenant.kyc_details.company_id }
+                      ].filter(doc => doc.url).map((doc) => (
                         <a 
-                          key={idx}
-                          href={`${API_URL}${doc}`}
+                          key={doc.label}
+                          href={`${API_URL}${doc.url}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-primary hover:shadow-sm transition-all group"
@@ -808,9 +832,7 @@ const PropertyDetails = () => {
                             <FileText className="w-5 h-5" />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-gray-900">
-                              {idx === 0 ? 'Aadhaar Card' : 'Company ID'}
-                            </p>
+                            <p className="text-sm font-semibold text-gray-900">{doc.label}</p>
                             <p className="text-xs text-primary font-medium">View File →</p>
                           </div>
                         </a>
@@ -832,8 +854,48 @@ const PropertyDetails = () => {
           </div>
         </div>
       )}
+
+      {/* Reviews Section */}
+      <div className="mt-12">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+          <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" />
+          Reviews & Ratings
+          <span className="text-lg text-gray-500 font-normal ml-2">({reviews.length})</span>
+        </h2>
+        {reviews.length === 0 ? (
+          <div className="bg-gray-50 border border-gray-100 p-8 rounded-2xl text-center">
+            <Star className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">No reviews yet for this property.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {reviews.map((review) => (
+              <div key={review._id} className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold">
+                      {review.user_id?.name?.charAt(0) || 'U'}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-900 text-sm">{review.user_id?.name || 'Anonymous User'}</h4>
+                      <p className="text-xs text-gray-500">{new Date(review.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'}`} />
+                    ))}
+                  </div>
+                </div>
+                {review.comment && (
+                  <p className="text-gray-600 text-sm leading-relaxed mt-auto italic">"{review.comment}"</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
-
 export default PropertyDetails;

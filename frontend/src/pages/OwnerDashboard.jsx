@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
-import { Building2, DollarSign, Shield, Wrench, Edit, Trash2, User, Mail, Lock, Phone } from 'lucide-react';
+import { Building2, DollarSign, Shield, Wrench, Edit, Trash2, User, Mail, Lock, Phone, Megaphone } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const OwnerDashboard = () => {
@@ -21,6 +21,13 @@ const OwnerDashboard = () => {
   const [adminPhone, setAdminPhone] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  // Notice Creation State
+  const [noticePropertyId, setNoticePropertyId] = useState('');
+  const [noticeTitle, setNoticeTitle] = useState('');
+  const [noticeContent, setNoticeContent] = useState('');
+  const [noticeMsg, setNoticeMsg] = useState('');
+  const [noticeErr, setNoticeErr] = useState('');
 
   // Modal State for Stats
   const [activeModal, setActiveModal] = useState(null);
@@ -130,6 +137,25 @@ const OwnerDashboard = () => {
       fetchAdmins(); // Refresh admin list
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create admin');
+    }
+  };
+
+  const handleCreateNotice = async (e) => {
+    e.preventDefault();
+    setNoticeMsg('');
+    setNoticeErr('');
+    try {
+      await axios.post('/api/notices', {
+        property_id: noticePropertyId,
+        title: noticeTitle,
+        content: noticeContent
+      });
+      setNoticeMsg('Notice broadcasted successfully!');
+      setNoticeTitle('');
+      setNoticeContent('');
+      setNoticePropertyId('');
+    } catch (err) {
+      setNoticeErr(err.response?.data?.message || 'Failed to send notice');
     }
   };
 
@@ -444,6 +470,37 @@ const OwnerDashboard = () => {
         >
           {showPropertyForm ? 'Cancel' : '+ Add New Building'}
         </button>
+      </div>
+
+      {/* Broadcast Notice Form */}
+      <div className="bg-yellow-50 rounded-xl shadow-sm border border-yellow-100 overflow-hidden mb-8 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Megaphone className="w-6 h-6 text-yellow-600" />
+          <h3 className="text-lg font-bold text-gray-900">Broadcast Notice to Tenants</h3>
+        </div>
+        {noticeMsg && <div className="bg-green-100 text-green-700 p-3 rounded-md mb-4 text-sm font-medium">{noticeMsg}</div>}
+        {noticeErr && <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4 text-sm font-medium">{noticeErr}</div>}
+        <form onSubmit={handleCreateNotice} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-1">
+            <select required value={noticePropertyId} onChange={e => setNoticePropertyId(e.target.value)} className="w-full border border-gray-300 p-2 rounded-lg text-sm bg-white">
+              <option value="">Select Property...</option>
+              {properties.map(p => (
+                <option key={p._id} value={p._id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="md:col-span-2">
+            <input type="text" placeholder="Notice Title (e.g., Water Supply Cut)" required value={noticeTitle} onChange={e => setNoticeTitle(e.target.value)} className="w-full border border-gray-300 p-2 rounded-lg text-sm bg-white" />
+          </div>
+          <div className="md:col-span-3">
+            <textarea rows="2" placeholder="Write your notice here..." required value={noticeContent} onChange={e => setNoticeContent(e.target.value)} className="w-full border border-gray-300 p-2 rounded-lg text-sm bg-white" />
+          </div>
+          <div className="md:col-span-3 flex justify-end">
+            <button type="submit" className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors">
+              Send Broadcast
+            </button>
+          </div>
+        </form>
       </div>
 
       {propMessage && <div className="bg-green-50 text-green-600 p-4 rounded-md mb-6">{propMessage}</div>}

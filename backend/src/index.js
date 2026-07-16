@@ -8,8 +8,12 @@ const connectDB = require('./config/db');
 connectDB();
 
 const mongoose = require('mongoose');
+const { initCronJobs } = require('./utils/cronJobs');
 
 const app = express();
+
+// Initialize scheduled background jobs
+initCronJobs();
 
 // Middleware
 app.use(cors());
@@ -46,6 +50,8 @@ app.use('/api/maintenance', require('./routes/maintenanceRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/chatbot', require('./routes/chatbotRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/notices', require('./routes/noticeRoutes'));
+app.use('/api/reviews', require('./routes/reviewRoutes'));
 
 // Basic route
 app.get('/api/health', (req, res) => {

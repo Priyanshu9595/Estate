@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Star } from 'lucide-react';
 
 const PropertiesList = () => {
   const [properties, setProperties] = useState([]);
@@ -89,8 +90,16 @@ const PropertiesList = () => {
                 )}
               </div>
               <div className="p-4">
-                <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">{property.name}</h3>
-                <p className="text-gray-500 text-sm mt-1">{property.address}, {property.city}</p>
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">{property.name}</h3>
+                  {property.average_rating > 0 && (
+                    <div className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded border border-yellow-200">
+                      <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                      <span className="font-bold text-xs">{property.average_rating.toFixed(1)}</span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-gray-500 text-sm">{property.address}, {property.city}</p>
                 <div className="mt-4 flex justify-between items-center">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     (property.total_units > 0 && property.total_units === property.occupied_units) 

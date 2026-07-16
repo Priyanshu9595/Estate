@@ -1,6 +1,7 @@
 const Property = require('../models/Property');
 const Unit = require('../models/Unit');
 const Lease = require('../models/Lease');
+const Review = require('../models/Review');
 
 // @desc    Get all properties (filtered by role) with stats
 // @route   GET /api/properties
@@ -31,6 +32,8 @@ const getProperties = async (req, res) => {
       ]
     });
 
+    const reviews = await Review.find({ property_id: { $in: propertyIds } });
+
     const propertiesWithStats = properties.map(prop => {
       const propUnits = units.filter(u => u.property_id.toString() === prop._id.toString());
       const totalUnits = propUnits.length;
@@ -40,12 +43,18 @@ const getProperties = async (req, res) => {
       const propLeases = activeLeases.filter(l => l.property_id.toString() === prop._id.toString());
       const totalAdvance = propLeases.reduce((acc, curr) => acc + (curr.deposit || 0), 0);
       
+      const propReviews = reviews.filter(r => r.property_id.toString() === prop._id.toString());
+      const totalReviews = propReviews.length;
+      const averageRating = totalReviews > 0 ? propReviews.reduce((acc, curr) => acc + curr.rating, 0) / totalReviews : 0;
+
       return {
         ...prop,
         total_units: totalUnits,
         occupied_units: occupiedUnits.length,
         active_revenue: activeRevenue,
-        total_advance: totalAdvance
+        total_advance: totalAdvance,
+        total_reviews: totalReviews,
+        average_rating: averageRating
       };
     });
 
