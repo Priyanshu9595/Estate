@@ -189,8 +189,75 @@ const createAdmin = async (req, res) => {
 // @access  Private (Owner)
 const getAdmins = async (req, res) => {
   try {
-    const admins = await User.find({ role: 'Admin' }).select('-password');
+    const admins = await User.find({ role: 'Admin' }).select('-password').lean();
+    const Property = require('../models/Property');
+    
+    // Attach assigned properties to each admin
+    for (let admin of admins) {
+      const properties = await Property.find({ assigned_admin_id: admin._id }).select('name').lean();
+      admin.assigned_properties = properties;
+    }
+    
     res.status(200).json(admins);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update Admin (Owner only)
+// @route   PUT /api/auth/admins/:id
+// @access  Private (Owner)
+const updateAdmin = async (req, res) => {
+  try {
+    const { name, email, password, phone, status } = req.body;
+    const admin = await User.findById(req.params.id);
+
+    if (!admin || admin.role !== 'Admin') {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    if (name) admin.name = name;
+    if (email) admin.email = email;
+    if (phone) admin.phone = phone;
+    if (status) admin.status = status;
+
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      admin.password = await bcrypt.hash(password, salt);
+    }
+
+    const updatedAdmin = await admin.save();
+    res.status(200).json({
+      _id: updatedAdmin.id,
+      name: updatedAdmin.name,
+      email: updatedAdmin.email,
+      phone: updatedAdmin.phone,
+      status: updatedAdmin.status,
+      role: updatedAdmin.role,
+      message: 'Admin updated successfully',
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete Admin (Owner only)
+// @route   DELETE /api/auth/admins/:id
+// @access  Private (Owner)
+const deleteAdmin = async (req, res) => {
+  try {
+    const admin = await User.findById(req.params.id);
+    if (!admin || admin.role !== 'Admin') {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    const Property = require('../models/Property');
+    // Unassign this admin from any properties
+    await Property.updateMany({ assigned_admin_id: admin._id }, { $set: { assigned_admin_id: null } });
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({ message: 'Admin deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -250,5 +317,7 @@ module.exports = {
   updateProfile,
   createAdmin,
   getAdmins,
+  updateAdmin,
+  deleteAdmin,
   getTenants,
 };
