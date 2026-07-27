@@ -13,6 +13,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import Reports from './pages/Reports';
 import TenantList from './pages/TenantList';
+import AdminList from './pages/AdminList';
 import Chatbot from './components/Chatbot';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -45,6 +46,7 @@ function App() {
             <Route path="/property/:id" element={<ProtectedRoute allowedRoles={['Admin', 'Owner', 'User']}><PropertyDetails /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute allowedRoles={['Admin', 'Owner']}><Reports /></ProtectedRoute>} />
             <Route path="/tenants" element={<ProtectedRoute allowedRoles={['Admin', 'Owner']}><TenantList /></ProtectedRoute>} />
+            <Route path="/admins" element={<ProtectedRoute allowedRoles={['Owner']}><AdminList /></ProtectedRoute>} />
             {/* Future routes: /users, /rent, /maintenance */}
           </Routes>
         </main>
