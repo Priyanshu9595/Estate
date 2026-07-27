@@ -835,13 +835,14 @@ const PropertyDetails = () => {
                 )}
 
                 {/* KYC Documents */}
-                {viewingTenantUnit.tenant.kyc_details && (viewingTenantUnit.tenant.kyc_details.aadhaar || viewingTenantUnit.tenant.kyc_details.company_id) && (
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-primary" /> KYC Documents
-                    </h4>
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-primary" /> KYC Documents
+                  </h4>
+                  {viewingTenantUnit.tenant.kyc_details && (viewingTenantUnit.tenant.kyc_details.photo || viewingTenantUnit.tenant.kyc_details.aadhaar || viewingTenantUnit.tenant.kyc_details.company_id) ? (
                     <div className="grid grid-cols-2 gap-4">
                       {[
+                        { label: 'Passport Photo', url: viewingTenantUnit.tenant.kyc_details.photo },
                         { label: 'Aadhaar Card', url: viewingTenantUnit.tenant.kyc_details.aadhaar },
                         { label: 'Company ID', url: viewingTenantUnit.tenant.kyc_details.company_id }
                       ].filter(doc => doc.url).map((doc) => (
@@ -862,8 +863,12 @@ const PropertyDetails = () => {
                         </a>
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl text-center text-gray-500 text-sm">
+                      No KYC documents uploaded by this tenant.
+                    </div>
+                  )}
+                </div>
 
               </div>
             </div>

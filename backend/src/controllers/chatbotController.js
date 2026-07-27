@@ -23,10 +23,10 @@ const handleChat = async (req, res) => {
 
     if (userRole === 'User') {
       const lease = await Lease.findOne({ user_id: req.user._id, status: 'Active' })
-        .populate('property_id')
-        .populate('unit_id')
+        .populate('property_id', 'name city')
+        .populate('unit_id', 'unit_no')
         .lean();
-      const maintenance = await Maintenance.find({ user_id: req.user._id }).lean();
+      const maintenance = await Maintenance.find({ user_id: req.user._id }, 'title status priority').lean();
       contextData = {
         role: 'User (Tenant)',
         profile: { name: req.user.name, email: req.user.email },
@@ -34,28 +34,28 @@ const handleChat = async (req, res) => {
         maintenanceRequests: maintenance
       };
     } else if (userRole === 'Admin') {
-      const properties = await Property.find({ assigned_admin_id: req.user._id }).lean();
+      const properties = await Property.find({ assigned_admin_id: req.user._id }, 'name city').lean();
       const propIds = properties.map(p => p._id);
-      const units = await Unit.find({ property_id: { $in: propIds } }).lean();
-      const leases = await Lease.find({ property_id: { $in: propIds } }).populate('user_id', 'name email phone').lean();
-      const maintenance = await Maintenance.find({ property_id: { $in: propIds } }).lean();
+      const units = await Unit.find({ property_id: { $in: propIds } }, 'property_id unit_no status rent_amount').lean();
+      const leases = await Lease.find({ property_id: { $in: propIds }, status: 'Active' }, 'property_id unit_id user_id').populate('user_id', 'name').lean();
+      const maintenance = await Maintenance.find({ property_id: { $in: propIds }, status: { $ne: 'Completed' } }, 'title status property_id unit_id').lean();
       contextData = {
         role: 'Admin',
-        profile: { name: req.user.name, email: req.user.email },
+        profile: { name: req.user.name },
         assignedProperties: properties,
         units,
         leases,
         maintenanceRequests: maintenance
       };
     } else if (userRole === 'Owner') {
-      const properties = await Property.find().lean();
-      const units = await Unit.find().lean();
-      const leases = await Lease.find().populate('user_id', 'name email phone').lean();
-      const maintenance = await Maintenance.find().lean();
-      const admins = await User.find({ role: 'Admin' }, 'name email phone').lean();
+      const properties = await Property.find({}, 'name city').lean();
+      const units = await Unit.find({}, 'property_id unit_no status rent_amount').lean();
+      const leases = await Lease.find({ status: 'Active' }, 'property_id unit_id user_id').populate('user_id', 'name').lean();
+      const maintenance = await Maintenance.find({ status: { $ne: 'Completed' } }, 'title status property_id unit_id').lean();
+      const admins = await User.find({ role: 'Admin' }, 'name').lean();
       contextData = {
         role: 'Owner',
-        profile: { name: req.user.name, email: req.user.email },
+        profile: { name: req.user.name },
         allProperties: properties,
         allUnits: units,
         allLeases: leases,
@@ -86,7 +86,7 @@ STRICT RULES:
     res.json({ reply: chatCompletion.choices[0]?.message?.content || "No response" });
   } catch (error) {
     console.error('Chatbot error:', error);
-    res.status(500).json({ message: 'Failed to process chat request' });
+    res.status(500).json({ message: 'Failed to process chat request', error: error.message, stack: error.stack });
   }
 };
 

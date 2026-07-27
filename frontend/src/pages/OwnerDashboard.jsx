@@ -2,7 +2,7 @@ import { API_URL } from '../config';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { Building2, DollarSign, Shield, Wrench, Edit, Trash2, User, Mail, Lock, Phone, Megaphone } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -626,7 +626,11 @@ const OwnerDashboard = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {properties.map(p => (
                 <tr key={p._id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-4 whitespace-nowrap font-medium text-gray-900">{p.name}</td>
+                  <td className="px-4 py-4 whitespace-nowrap font-medium text-primary">
+                    <Link to={`/property/${p._id}`} className="hover:underline flex items-center gap-2">
+                      {p.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-4 whitespace-nowrap text-gray-500">{p.city}, {p.state}</td>
                   <td className="px-4 py-4 whitespace-nowrap text-gray-500">₹{p.rent_amount}</td>
                   <td className="px-4 py-4 whitespace-nowrap text-center text-sm">
