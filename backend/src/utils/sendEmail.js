@@ -1,39 +1,44 @@
-const nodemailer = require('nodemailer');
-
 const sendEmail = async (options) => {
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT || 587);
-  const user = process.env.SMTP_USER || process.env.EMAIL_USER;
-  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+  const apiKey = process.env.API_KEY_FOR_EMAIL;
   const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.EMAIL_USER;
 
-  if (!host || !user || !pass || !fromEmail) {
-    throw new Error('SMTP configuration is incomplete. Set SMTP_HOST, SMTP_PORT, EMAIL_USER/SMTP_USER, EMAIL_PASS/SMTP_PASS, and SMTP_FROM_EMAIL in Render.');
+  if (!apiKey || !fromEmail) {
+    throw new Error('Email configuration is incomplete. Set API_KEY_FOR_EMAIL and SMTP_FROM_EMAIL in .env.');
   }
 
-  // Create a transporter
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: {
-      user,
-      pass,
-    },
-  });
-
-  // Define email options
-  const mailOptions = {
-    from: `EstateFlow <${fromEmail}>`,
-    to: options.email,
+  const url = 'https://api.brevo.com/v3/smtp/email';
+  
+  const payload = {
+    sender: { email: fromEmail, name: 'EstateFlow' },
+    to: [{ email: options.email }],
     subject: options.subject,
-    html: options.html,
+    htmlContent: options.html,
   };
 
-  // Send email
-  const info = await transporter.sendMail(mailOptions);
-  console.log(`Email sent to ${options.email}: ${info.messageId || info.response}`);
-  return info;
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Brevo API Error:', errorData);
+      throw new Error(`Email could not be sent: ${errorData}`);
+    }
+
+    const data = await response.json();
+    console.log(`Email sent to ${options.email}: ${data.messageId}`);
+    return data;
+  } catch (error) {
+    console.error('Error sending email:', error);
+    throw error;
+  }
 };
 
 module.exports = sendEmail;
