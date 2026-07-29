@@ -12,23 +12,23 @@ const PropertyDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [hasActiveLease, setHasActiveLease] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [averageRating, setAverageRating] = useState(0);
-  
+
   // Booking Modal State
   const [bookingUnit, setBookingUnit] = useState(null);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [bookingDates, setBookingDates] = useState({ start_date: '', end_date: '' });
-  
+
   // Tenant Details Modal State
   const [viewingTenantUnit, setViewingTenantUnit] = useState(null);
-  
+
   // KYC & Signature State
   const [bookingStep, setBookingStep] = useState(1); // 1: KYC, 2: Signature, 3: Payment
   const sigPad = useRef({});
@@ -50,7 +50,7 @@ const PropertyDetails = () => {
     }
     const newCount = Math.max(1, parseInt(count) || 1);
     setNumberOfPersons(newCount);
-    
+
     setKycData(prev => {
       if (newCount > prev.length) {
         const additional = Array(newCount - prev.length).fill().map(() => ({
@@ -164,12 +164,12 @@ const PropertyDetails = () => {
         const proratedRentObj = calculateProratedRent(bookingUnit.rent_amount);
         amount = proratedRentObj.amount + property.deposit_amount;
       }
-      
+
       // 1. Razorpay Order Creation
       const orderRes = await axios.post('/api/payments/create-order', { amount });
-      
+
       if (!orderRes.data.id) {
-         throw new Error('Order creation failed. Check backend Razorpay keys.');
+        throw new Error('Order creation failed. Check backend Razorpay keys.');
       }
 
       // 2. Open Razorpay Checkout Modal
@@ -200,11 +200,11 @@ const PropertyDetails = () => {
               formData.append('photo', kycData[i].photo);
               formData.append('aadhaar', kycData[i].aadhaar);
               formData.append('company_id', kycData[i].company_id);
-              
+
               const uploadRes = await axios.post('/api/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
               });
-              
+
               if (i === 0) {
                 primaryKycDetails = uploadRes.data.fileUrls;
               }
@@ -248,25 +248,25 @@ const PropertyDetails = () => {
             setSignatureData(null);
             navigate('/user-dashboard');
           } catch (verifyErr) {
-             console.error(verifyErr);
-             if (completionStep === 'lease booking') {
-               try {
-                 const leaseRes = await axios.get('/api/leases/my-lease');
-                 const bookedUnitId = leaseRes.data?.unit_id?._id || leaseRes.data?.unit_id;
-                 if (bookedUnitId && bookedUnitId.toString() === bookingUnit._id.toString()) {
-                   setBookingUnit(null);
-                   setBookingStep(1);
-                   setSignatureData(null);
-                   navigate('/user-dashboard');
-                   return;
-                 }
-               } catch (leaseCheckErr) {
-                 console.error('Could not confirm booking after lease booking failure:', leaseCheckErr);
-               }
-             }
-             const paymentId = response.razorpay_payment_id ? ` Payment ID: ${response.razorpay_payment_id}.` : '';
-             setBookingError(verifyErr.response?.data?.message || `Payment was successful, but ${completionStep} failed.${paymentId} Please contact support.`);
-             setBookingLoading(false);
+            console.error(verifyErr);
+            if (completionStep === 'lease booking') {
+              try {
+                const leaseRes = await axios.get('/api/leases/my-lease');
+                const bookedUnitId = leaseRes.data?.unit_id?._id || leaseRes.data?.unit_id;
+                if (bookedUnitId && bookedUnitId.toString() === bookingUnit._id.toString()) {
+                  setBookingUnit(null);
+                  setBookingStep(1);
+                  setSignatureData(null);
+                  navigate('/user-dashboard');
+                  return;
+                }
+              } catch (leaseCheckErr) {
+                console.error('Could not confirm booking after lease booking failure:', leaseCheckErr);
+              }
+            }
+            const paymentId = response.razorpay_payment_id ? ` Payment ID: ${response.razorpay_payment_id}.` : '';
+            setBookingError(verifyErr.response?.data?.message || `Payment was successful, but ${completionStep} failed.${paymentId} Please contact support.`);
+            setBookingLoading(false);
           }
         },
         prefill: {
@@ -281,10 +281,10 @@ const PropertyDetails = () => {
 
       const paymentObject = new window.Razorpay(options);
       paymentObject.on('payment.failed', function (response) {
-         setBookingError(response.error.description);
-         setBookingLoading(false);
+        setBookingError(response.error.description);
+        setBookingLoading(false);
       });
-      
+
       paymentObject.open();
 
     } catch (err) {
@@ -294,180 +294,208 @@ const PropertyDetails = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-screen">
       {/* Back Button */}
       <div className="mb-6">
-        <Link to={-1} className="inline-flex items-center text-secondary hover:text-primary transition-colors font-medium text-sm">
+        <Link to={-1} className="inline-flex items-center text-slate-500 hover:text-primary transition-colors font-semibold text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Dashboard
         </Link>
       </div>
 
-      {/* Property Images Gallery */}
+      {/* Property Images Masonry Gallery */}
       {property.images && property.images.length > 0 && (
-        <div className="mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className={`md:col-span-${property.images.length === 1 ? '4' : '2'} row-span-2`}>
-              <img src={`${API_URL}${property.images[0]}`} alt={property.name} className="w-full h-full object-cover rounded-2xl shadow-sm min-h-[300px] max-h-[400px]" />
+        <div className="mb-12 relative rounded-3xl overflow-hidden shadow-2xl shadow-slate-200/50">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 h-[50vh] min-h-[400px]">
+            <div className={`md:col-span-${property.images.length === 1 ? '4' : '2'} row-span-2 relative group cursor-pointer overflow-hidden`}>
+              <img src={`${API_URL}${property.images[0]}`} alt={property.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
+              <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
             </div>
             {property.images.slice(1, 5).map((img, idx) => (
-              <div key={idx} className="md:col-span-1">
-                <img src={`${API_URL}${img}`} alt={`${property.name} ${idx+2}`} className="w-full h-full object-cover rounded-xl shadow-sm min-h-[140px] max-h-[190px]" />
+              <div key={idx} className="md:col-span-1 relative group cursor-pointer overflow-hidden hidden md:block">
+                <img src={`${API_URL}${img}`} alt={`${property.name} ${idx + 2}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
               </div>
             ))}
+          </div>
+          {/* Badge */}
+          <div className="absolute top-6 left-6">
+            <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl shadow-lg border border-white/20">
+              <p className="text-sm font-black text-slate-900 uppercase tracking-wider">{property.type}</p>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Property Header */}
-      <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col lg:flex-row gap-10">
+
+        {/* Left Column: Main Content */}
+        <div className="flex-1 space-y-10">
+
+          {/* Header Info */}
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <Building2 className="text-primary w-8 h-8" />
-              {property.name}
-            </h1>
-            <div className="flex items-center gap-2 mt-2">
-              <p className="text-gray-500 flex items-center gap-1">
-                <MapPin className="w-4 h-4" />
-                {property.address}, {property.city}, {property.state}
-              </p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                {property.name}
+              </h1>
+            </div>
+            <div className="flex flex-wrap items-center gap-4 text-slate-600 font-medium">
+              <span className="flex items-center gap-1.5"><MapPin className="w-5 h-5 text-slate-400" /> {property.address}, {property.city}, {property.state}</span>
               {averageRating > 0 && (
                 <>
-                  <span className="text-gray-300">•</span>
-                  <div className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-md border border-yellow-200">
-                    <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                    <span className="font-bold text-sm">{averageRating.toFixed(1)}</span>
-                    <span className="text-xs text-yellow-600 font-medium">({reviews.length})</span>
+                  <span className="text-slate-300">•</span>
+                  <div className="flex items-center gap-1.5">
+                    <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                    <span className="font-bold text-slate-900">{averageRating.toFixed(1)}</span>
+                    <span className="text-sm text-slate-500">({reviews.length} reviews)</span>
                   </div>
                 </>
               )}
             </div>
           </div>
-          <div className="bg-primary/10 px-4 py-2 rounded-xl border border-primary/20">
-            <p className="text-sm text-primary font-semibold uppercase tracking-wider">{property.type}</p>
+
+          <hr className="border-slate-200" />
+
+          {/* Description */}
+          {property.description && (
+            <div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">About this property</h3>
+              <p className="text-slate-600 text-lg whitespace-pre-wrap leading-relaxed">{property.description}</p>
+            </div>
+          )}
+
+          {/* Facilities */}
+          {property.amenities && property.amenities.length > 0 && (
+            <div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-6">What this place offers</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {property.amenities.map((amenity, i) => (
+                  <div key={i} className="flex items-center gap-3 text-slate-700 font-medium">
+                    <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0" />
+                    <span className="text-lg">{amenity}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <hr className="border-slate-200" />
+
+          {/* Rooms Grid */}
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              Select a Room <span className="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">{units.length} total</span>
+            </h2>
+
+            {units.length === 0 ? (
+              <div className="bg-yellow-50 text-yellow-800 p-6 rounded-2xl border border-yellow-200 text-center font-medium">
+                No rooms are available for this property yet.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {units.map((unit) => (
+                  <div
+                    key={unit._id}
+                    onClick={() => {
+                      if (unit.status === 'Occupied' && (user?.role === 'Admin' || user?.role === 'Owner') && unit.tenant) {
+                        setViewingTenantUnit(unit);
+                      }
+                    }}
+                    className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 hover:shadow-xl hover:border-blue-100 transition-all cursor-pointer relative overflow-hidden group"
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                      <h3 className="text-4xl font-black text-slate-900 group-hover:text-primary transition-colors">
+                        {unit.unit_no}
+                      </h3>
+                      <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider shadow-sm ${unit.status === 'Available' ? 'bg-green-50 text-green-600 border border-green-200' :
+                          unit.status === 'Occupied' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-orange-50 text-orange-600 border border-orange-200'
+                        }`}>
+                        {unit.status}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-end mt-4">
+                      <div>
+                        <p className="text-sm text-slate-500 font-semibold mb-1">Rent Amount</p>
+                        <p className="text-2xl font-black text-slate-900">₹{unit.rent_amount}</p>
+                      </div>
+
+                      {user?.role === 'User' && unit.status === 'Available' && !hasActiveLease && (
+                        <div className="text-right">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setBookingUnit(unit);
+                            }}
+                            className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-primary transition-colors shadow-md hover:shadow-xl"
+                          >
+                            Book Now
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {property.description && (
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Description</h3>
-            <p className="text-gray-600 whitespace-pre-wrap leading-relaxed">{property.description}</p>
-          </div>
-        )}
+        {/* Right Column: Sticky Summary Box */}
+        <div className="lg:w-[400px] shrink-0">
+          <div className="sticky top-24 bg-white p-8 rounded-3xl shadow-2xl shadow-slate-200/50 border border-slate-100">
+            <h3 className="text-3xl font-black text-slate-900 mb-2">₹{property.rent_amount}<span className="text-lg font-medium text-slate-500"> {property.type === 'DailyRoom' ? '/day' : '/month'}</span></h3>
+            <p className="text-slate-500 font-medium mb-6">Base starting rent</p>
 
-        {property.amenities && property.amenities.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">Facilities</h3>
-            <div className="flex flex-wrap gap-2">
-              {property.amenities.map((amenity, i) => (
-                <span key={i} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold border border-blue-100">
-                  {amenity}
-                </span>
-              ))}
+            <div className="space-y-4 mb-8">
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex justify-between items-center">
+                <span className="text-slate-600 font-medium">Advance Deposit</span>
+                <span className="font-bold text-slate-900 text-lg">₹{property.deposit_amount}</span>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex justify-between items-center">
+                <span className="text-slate-600 font-medium">Property Status</span>
+                <span className={`font-bold text-lg ${property.status === 'Available' ? 'text-green-600' : 'text-slate-900'}`}>{property.status}</span>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex justify-between items-center">
+                <span className="text-slate-600 font-medium">Total Rooms</span>
+                <span className="font-bold text-slate-900 text-lg">{units.length}</span>
+              </div>
             </div>
-          </div>
-        )}
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8 pt-6 border-t border-gray-100">
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Base Rent</p>
-            <p className="text-xl font-bold text-gray-900 flex items-center">
-              <IndianRupee className="w-5 h-5 mr-1 text-gray-400" />
-              {property.rent_amount}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Advance Pay</p>
-            <p className="text-xl font-bold text-gray-900 flex items-center">
-              <IndianRupee className="w-5 h-5 mr-1 text-gray-400" />
-              {property.deposit_amount}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Status</p>
-            <span className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${
-              property.status === 'Available' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-            }`}>
-              {property.status}
-            </span>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Total Rooms</p>
-            <p className="text-xl font-bold text-primary">{units.length}</p>
+            {user?.role === 'User' ? (
+              <div className="text-center">
+                <p className="text-sm font-medium text-slate-500 mb-3">Select a room from the list to book your stay.</p>
+                <div className="w-full bg-slate-100 text-slate-400 py-4 rounded-xl font-bold cursor-not-allowed border border-slate-200 border-dashed">
+                  Awaiting Room Selection
+                </div>
+              </div>
+            ) : user?.role === 'Owner' || user?.role === 'Admin' ? (
+              <button
+                onClick={() => navigate('/owner-dashboard', { state: { openCreateForm: true, editProperty: property } })}
+                className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-primary transition-colors shadow-lg"
+              >
+                Edit Property Settings
+              </button>
+            ) : (
+              <div className="text-center">
+                <Link to="/login" className="block w-full bg-primary text-white py-4 rounded-xl font-bold hover:bg-blue-800 transition-colors shadow-lg">
+                  Log in to Book
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Rooms Grid */}
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Rooms ({units.length})</h2>
-      
-      {units.length === 0 ? (
-        <div className="bg-yellow-50 text-yellow-800 p-6 rounded-xl border border-yellow-200 text-center">
-          No rooms were created for this property yet.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {units.map((unit) => (
-            <div 
-              key={unit._id} 
-              onClick={() => {
-                if (unit.status === 'Occupied' && (user?.role === 'Admin' || user?.role === 'Owner') && unit.tenant) {
-                  setViewingTenantUnit(unit);
-                }
-              }}
-              className="bg-surface rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow cursor-pointer relative overflow-hidden group"
-            >
-              {/* Top Accent Bar based on status */}
-              <div className={`absolute top-0 left-0 w-full h-1 ${
-                unit.status === 'Available' ? 'bg-green-500' : 
-                unit.status === 'Occupied' ? 'bg-blue-500' : 'bg-orange-500'
-              }`} />
-              
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-3xl font-black text-gray-900 group-hover:text-primary transition-colors">
-                  {unit.unit_no}
-                </h3>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                  unit.status === 'Available' ? 'bg-green-100 text-green-700' : 
-                  unit.status === 'Occupied' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
-                }`}>
-                  {unit.status}
-                </span>
-              </div>
-              
-              <div className="pt-4 border-t border-gray-50 flex justify-between items-end">
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Rent Amount</p>
-                  <p className="text-xl font-bold text-gray-900">₹{unit.rent_amount}</p>
-                </div>
-                
-                {user?.role === 'User' && unit.status === 'Available' && !hasActiveLease && (
-                  <div className="text-right flex flex-col items-end">
-                    <button 
-                      onClick={() => setBookingUnit(unit)}
-                      className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-800 transition-colors shadow-sm"
-                    >
-                      Book Now
-                    </button>
-                    <p className="text-[11px] text-gray-500 mt-1.5 font-semibold bg-gray-100 px-2 py-0.5 rounded-md">
-                      {property.type === 'DailyRoom' ? `Pay ₹${unit.rent_amount} / day` : `Pay ₹${calculateProratedRent(unit.rent_amount).amount + property.deposit_amount} today`}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Booking Modal */}
       {bookingUnit && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden max-h-[90vh] flex flex-col">
             <div className="bg-primary p-6 text-white text-center shrink-0 relative">
-              <button 
-                onClick={() => setBookingUnit(null)} 
+              <button
+                onClick={() => setBookingUnit(null)}
                 className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors p-1"
                 type="button"
               >
@@ -480,17 +508,17 @@ const PropertyDetails = () => {
               <p className="opacity-90 mt-1">Room {bookingUnit.unit_no} at {property.name}</p>
               <div className="mt-3 inline-block bg-white/20 px-4 py-1.5 rounded-full text-sm font-bold">
                 {property.type === 'DailyRoom' ? (
-                  bookingDates.start_date && bookingDates.end_date ? 
-                  `Total Payable: ₹${calculateDailyAmount(bookingUnit.rent_amount) + (property.deposit_amount || 0)}` : 'Select dates to see price'
+                  bookingDates.start_date && bookingDates.end_date ?
+                    `Total Payable: ₹${calculateDailyAmount(bookingUnit.rent_amount) + (property.deposit_amount || 0)}` : 'Select dates to see price'
                 ) : (
                   `Total Payable Today: ₹${calculateProratedRent(bookingUnit.rent_amount).amount + property.deposit_amount}`
                 )}
               </div>
             </div>
-            
+
             <div className="p-6 overflow-y-auto">
               {bookingError && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm font-medium">{bookingError}</div>}
-              
+
               {bookingStep === 1 && (
                 <form onSubmit={handleKycNext} className="space-y-4">
 
@@ -498,11 +526,11 @@ const PropertyDetails = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-secondary mb-1">Check-in Date</label>
-                        <input type="date" required className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 outline-none text-sm" value={bookingDates.start_date} onChange={e => setBookingDates({...bookingDates, start_date: e.target.value})} />
+                        <input type="date" required className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 outline-none text-sm" value={bookingDates.start_date} onChange={e => setBookingDates({ ...bookingDates, start_date: e.target.value })} />
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-secondary mb-1">Check-out Date</label>
-                        <input type="date" required className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 outline-none text-sm" value={bookingDates.end_date} onChange={e => setBookingDates({...bookingDates, end_date: e.target.value})} />
+                        <input type="date" required className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 outline-none text-sm" value={bookingDates.end_date} onChange={e => setBookingDates({ ...bookingDates, end_date: e.target.value })} />
                       </div>
                       <div className="col-span-2">
                         <label className="block text-sm font-semibold text-secondary mb-1">Number of Persons</label>
@@ -516,12 +544,12 @@ const PropertyDetails = () => {
                       <h3 className="font-bold text-gray-900">Person {index + 1} {index === 0 && '(Primary)'}</h3>
                       <div>
                         <label className="block text-sm font-semibold text-secondary mb-1">Phone Number</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           pattern="[0-9]{10}"
                           maxLength="10"
                           title="Phone number must be exactly 10 digits"
-                          className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none text-sm" 
+                          className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none text-sm"
                           value={person.phone}
                           onChange={e => {
                             // Only allow numbers
@@ -535,8 +563,8 @@ const PropertyDetails = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-secondary mb-1">Current Address</label>
-                        <textarea 
-                          className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none text-sm" 
+                        <textarea
+                          className="w-full border border-gray-200 bg-gray-50 rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none text-sm"
                           rows="2"
                           value={person.address}
                           onChange={e => {
@@ -549,8 +577,8 @@ const PropertyDetails = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Passport Size Photo</label>
-                        <input 
-                          type="file" 
+                        <input
+                          type="file"
                           accept="image/*"
                           className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
                           onChange={e => {
@@ -563,8 +591,8 @@ const PropertyDetails = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Aadhaar Card (Image/PDF)</label>
-                        <input 
-                          type="file" 
+                        <input
+                          type="file"
                           className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
                           onChange={e => {
                             const newKyc = [...kycData];
@@ -576,8 +604,8 @@ const PropertyDetails = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Company / Student ID</label>
-                        <input 
-                          type="file" 
+                        <input
+                          type="file"
                           className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
                           onChange={e => {
                             const newKyc = [...kycData];
@@ -591,14 +619,14 @@ const PropertyDetails = () => {
                   ))}
 
                   <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100">
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setBookingUnit(null)}
                       className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition-colors text-sm"
                     >
                       Cancel
                     </button>
-                    <button 
+                    <button
                       type="submit"
                       className="flex-1 px-4 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-blue-800 transition-colors shadow-sm text-sm"
                     >
@@ -633,16 +661,16 @@ const PropertyDetails = () => {
                     </ul>
 
                   </div>
-                  
+
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Please sign below to agree to the terms:</label>
                   <div className="border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 mb-4 overflow-hidden">
-                    <SignatureCanvas 
+                    <SignatureCanvas
                       penColor="black"
-                      canvasProps={{width: 500, height: 200, className: 'w-full h-[200px]'}}
+                      canvasProps={{ width: 500, height: 200, className: 'w-full h-[200px]' }}
                       ref={sigPad}
                     />
                   </div>
-                  <button 
+                  <button
                     onClick={() => sigPad.current.clear()}
                     className="text-sm text-gray-500 hover:text-red-500 font-medium mb-6"
                   >
@@ -650,13 +678,13 @@ const PropertyDetails = () => {
                   </button>
 
                   <div className="flex gap-3">
-                    <button 
+                    <button
                       onClick={() => setBookingStep(1)}
                       className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition-colors text-sm"
                     >
                       Back
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         try {
                           if (!sigPad.current) {
@@ -667,7 +695,7 @@ const PropertyDetails = () => {
                             alert('Please provide your digital signature.');
                             return;
                           }
-                          
+
                           let dataUrl = '';
                           if (typeof sigPad.current.getTrimmedCanvas === 'function') {
                             try {
@@ -733,14 +761,14 @@ const PropertyDetails = () => {
                   </div>
 
                   <div className="flex gap-3">
-                    <button 
+                    <button
                       onClick={() => setBookingStep(2)}
                       disabled={bookingLoading}
                       className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm"
                     >
                       Back
                     </button>
-                    <button 
+                    <button
                       onClick={handleBookRoom}
                       disabled={bookingLoading}
                       className="flex-1 px-4 py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors shadow-sm disabled:opacity-70 text-sm"
@@ -766,23 +794,23 @@ const PropertyDetails = () => {
                 </h2>
                 <p className="opacity-90 mt-1">Room {viewingTenantUnit.unit_no} at {property.name}</p>
               </div>
-              <button 
+              <button
                 onClick={() => setViewingTenantUnit(null)}
                 className="text-white hover:bg-white/20 p-2 rounded-full transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto">
               <div className="space-y-6">
-                
+
                 {/* Profile Section */}
                 <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
                   {viewingTenantUnit.tenant.kyc_details?.photo ? (
-                    <img 
-                      src={`${API_URL}${viewingTenantUnit.tenant.kyc_details.photo}`} 
-                      alt="Tenant Photo" 
+                    <img
+                      src={`${API_URL}${viewingTenantUnit.tenant.kyc_details.photo}`}
+                      alt="Tenant Photo"
                       className="w-20 h-20 rounded-full object-cover border-4 border-gray-50 shadow-sm"
                     />
                   ) : (
@@ -846,7 +874,7 @@ const PropertyDetails = () => {
                         { label: 'Aadhaar Card', url: viewingTenantUnit.tenant.kyc_details.aadhaar },
                         { label: 'Company ID', url: viewingTenantUnit.tenant.kyc_details.company_id }
                       ].filter(doc => doc.url).map((doc) => (
-                        <a 
+                        <a
                           key={doc.label}
                           href={`${API_URL}${doc.url}`}
                           target="_blank"
@@ -873,12 +901,12 @@ const PropertyDetails = () => {
               </div>
             </div>
             <div className="p-4 border-t border-gray-100 bg-gray-50 shrink-0 flex justify-end">
-               <button 
-                  onClick={() => setViewingTenantUnit(null)}
-                  className="px-6 py-2 bg-gray-200 text-gray-800 font-bold rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Close
-               </button>
+              <button
+                onClick={() => setViewingTenantUnit(null)}
+                className="px-6 py-2 bg-gray-200 text-gray-800 font-bold rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
