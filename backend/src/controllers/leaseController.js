@@ -263,6 +263,21 @@ const getMyLease = async (req, res) => {
   }
 };
 
+// @desc    Get all leases for current user (History)
+// @route   GET /api/leases/my-history
+// @access  Private (User)
+const getMyLeaseHistory = async (req, res) => {
+  try {
+    const leases = await Lease.find({ user_id: req.user._id })
+      .populate('property_id')
+      .populate('unit_id')
+      .sort({ start_date: -1 });
+    res.status(200).json(leases);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Get leases expiring within 30 days
 // @route   GET /api/leases/expiring
 // @access  Private (Owner/Admin)
@@ -369,4 +384,4 @@ const processRefund = async (req, res) => {
   }
 };
 
-module.exports = { createLease, getLeasesByProperty, bookRoom, terminateLease, getMyLease, getExpiringLeases, getPendingRefunds, processRefund };
+module.exports = { createLease, getLeasesByProperty, bookRoom, terminateLease, getMyLease, getMyLeaseHistory, getExpiringLeases, getPendingRefunds, processRefund };

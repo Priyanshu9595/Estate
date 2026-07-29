@@ -1,12 +1,15 @@
 import { Link } from 'react-router-dom';
 import { ShieldCheck, TrendingUp, Users, Building, Building2, PhoneCall, Mail, MapPin, ArrowRight, CheckCircle2, ChevronRight, BarChart3, Home } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const LandingPage = () => {
+  const { user } = useAuth();
+  
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 overflow-hidden font-sans">
       
       {/* Hero Section */}
-      <section className="relative pt-20 pb-24 lg:pt-32 lg:pb-32 overflow-hidden">
+      <section className="relative pt-0 pb-24 lg:pt-0 lg:pb-32 overflow-hidden">
         {/* Background Decorative Elements */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
           <div className="absolute -top-[30%] -right-[10%] w-[70%] h-[70%] rounded-full bg-blue-100/40 blur-3xl"></div>
@@ -32,19 +35,29 @@ const LandingPage = () => {
                 The ultimate SaaS platform for landlords, managers, and tenants. Streamline rent collection, maintenance requests, and lease tracking all in one powerful dashboard.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link to="/register" className="inline-flex items-center justify-center gap-2 bg-primary text-white hover:bg-blue-700 px-8 py-4 rounded-xl text-lg font-bold shadow-[0_8px_30px_rgb(37,99,235,0.25)] transition-all hover:-translate-y-1">
-                  Get Started Now <ArrowRight size={20} />
-                </Link>
-                <Link to="#features" className="inline-flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 px-8 py-4 rounded-xl text-lg font-bold transition-all hover:-translate-y-1">
-                  Explore Features
-                </Link>
-              </div>
-              
-              <div className="mt-10 flex items-center justify-center lg:justify-start gap-8 text-sm font-medium text-slate-500">
-                <div className="flex items-center gap-2"><CheckCircle2 size={18} className="text-green-500" /> No credit card required</div>
-                <div className="flex items-center gap-2"><CheckCircle2 size={18} className="text-green-500" /> 14-day free trial</div>
-              </div>
+              {user ? (
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mt-6">
+                  <Link to={`/${user.role.toLowerCase()}-dashboard`} className="inline-flex items-center justify-center gap-2 bg-primary text-white hover:bg-blue-700 px-8 py-4 rounded-xl text-lg font-bold shadow-[0_8px_30px_rgb(37,99,235,0.25)] transition-all hover:-translate-y-1">
+                    Go to Dashboard <ArrowRight size={20} />
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                    <Link to="/register" className="inline-flex items-center justify-center gap-2 bg-primary text-white hover:bg-blue-700 px-8 py-4 rounded-xl text-lg font-bold shadow-[0_8px_30px_rgb(37,99,235,0.25)] transition-all hover:-translate-y-1">
+                      Get Started Now <ArrowRight size={20} />
+                    </Link>
+                    <a href="#features" className="inline-flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 px-8 py-4 rounded-xl text-lg font-bold transition-all hover:-translate-y-1">
+                      Explore Features
+                    </a>
+                  </div>
+                  
+                  <div className="mt-10 flex items-center justify-center lg:justify-start gap-8 text-sm font-medium text-slate-500">
+                    <div className="flex items-center gap-2"><CheckCircle2 size={18} className="text-green-500" /> No credit card required</div>
+                    <div className="flex items-center gap-2"><CheckCircle2 size={18} className="text-green-500" /> 14-day free trial</div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Right Image / Graphic */}
@@ -91,9 +104,11 @@ const LandingPage = () => {
               <p className="text-lg text-slate-600 leading-relaxed mb-8">
                 Founded with a vision to bring transparency and efficiency to real estate management, EstateFlow bridges the gap between owners and tenants. Whether you own a single PG or a sprawling apartment complex, our technology empowers you with deep insights and gives your tenants the seamless digital experience they deserve.
               </p>
-              <Link to="/register" className="inline-flex items-center gap-2 text-primary font-bold hover:text-blue-800 transition-colors text-lg">
-                Learn more about our mission <ChevronRight size={20} />
-              </Link>
+              {!user && (
+                <Link to="/register" className="inline-flex items-center gap-2 text-primary font-bold hover:text-blue-800 transition-colors text-lg">
+                  Learn more about our mission <ChevronRight size={20} />
+                </Link>
+              )}
             </div>
             
             <div className="space-y-6">
@@ -156,65 +171,67 @@ const LandingPage = () => {
       </section>
 
       {/* Contact & CTA Section */}
-      <section className="py-24 bg-white border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
-            {/* Contact Details */}
-            <div className="lg:col-span-5">
-              <h2 className="text-4xl font-extrabold mb-4 text-slate-900">Get in Touch</h2>
-              <p className="text-slate-600 mb-10 text-lg">
-                Have questions about our platform or need a custom enterprise solution? Our support team is available 24/7.
-              </p>
+      {!user && (
+        <section className="py-24 bg-white border-t border-slate-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
               
-              <div className="space-y-6">
-                <div className="flex items-center gap-5 p-4 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
-                  <div className="bg-blue-50 p-4 rounded-full"><PhoneCall size={24} className="text-primary" /></div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Call Us</p>
-                    <p className="text-lg font-bold text-slate-900">+91 98765 43210</p>
+              {/* Contact Details */}
+              <div className="lg:col-span-5">
+                <h2 className="text-4xl font-extrabold mb-4 text-slate-900">Get in Touch</h2>
+                <p className="text-slate-600 mb-10 text-lg">
+                  Have questions about our platform or need a custom enterprise solution? Our support team is available 24/7.
+                </p>
+                
+                <div className="space-y-6">
+                  <div className="flex items-center gap-5 p-4 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+                    <div className="bg-blue-50 p-4 rounded-full"><PhoneCall size={24} className="text-primary" /></div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Call Us</p>
+                      <p className="text-lg font-bold text-slate-900">+91 98765 43210</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-5 p-4 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
-                  <div className="bg-blue-50 p-4 rounded-full"><Mail size={24} className="text-primary" /></div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Email Us</p>
-                    <p className="text-lg font-bold text-slate-900">contact@estateflow.com</p>
+                  <div className="flex items-center gap-5 p-4 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+                    <div className="bg-blue-50 p-4 rounded-full"><Mail size={24} className="text-primary" /></div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Email Us</p>
+                      <p className="text-lg font-bold text-slate-900">contact@estateflow.com</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-5 p-4 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
-                  <div className="bg-blue-50 p-4 rounded-full"><MapPin size={24} className="text-primary" /></div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Headquarters</p>
-                    <p className="text-lg font-bold text-slate-900">Tech Park, Hyderabad, India</p>
+                  <div className="flex items-center gap-5 p-4 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+                    <div className="bg-blue-50 p-4 rounded-full"><MapPin size={24} className="text-primary" /></div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Headquarters</p>
+                      <p className="text-lg font-bold text-slate-900">Tech Park, Hyderabad, India</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* CTA Card */}
-            <div className="lg:col-span-7">
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-10 md:p-14 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3"></div>
-                
-                <div className="relative z-10 text-center lg:text-left">
-                  <h3 className="text-3xl md:text-4xl font-extrabold mb-4 text-white">Join EstateFlow Today</h3>
-                  <p className="text-slate-300 mb-8 text-lg max-w-lg mx-auto lg:mx-0">
-                    Experience property management like never before. Sign up today and digitize your entire real estate portfolio in minutes.
-                  </p>
-                  <Link to="/register" className="inline-block w-full sm:w-auto text-center bg-primary hover:bg-blue-500 text-white px-10 py-4 rounded-xl font-bold text-lg transition-colors shadow-lg shadow-blue-900/20">
-                    Create your Free Account
-                  </Link>
-                  <p className="mt-6 text-sm text-slate-400 font-medium">
-                    Already have an account? <Link to="/login" className="text-white hover:text-blue-300 underline underline-offset-4">Log in here</Link>
-                  </p>
+              {/* CTA Card */}
+              <div className="lg:col-span-7">
+                <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-10 md:p-14 shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                  <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3"></div>
+                  
+                  <div className="relative z-10 text-center lg:text-left">
+                    <h3 className="text-3xl md:text-4xl font-extrabold mb-4 text-white">Join EstateFlow Today</h3>
+                    <p className="text-slate-300 mb-8 text-lg max-w-lg mx-auto lg:mx-0">
+                      Experience property management like never before. Sign up today and digitize your entire real estate portfolio in minutes.
+                    </p>
+                    <Link to="/register" className="inline-block w-full sm:w-auto text-center bg-primary hover:bg-blue-500 text-white px-10 py-4 rounded-xl font-bold text-lg transition-colors shadow-lg shadow-blue-900/20">
+                      Create your Free Account
+                    </Link>
+                    <p className="mt-6 text-sm text-slate-400 font-medium">
+                      Already have an account? <Link to="/login" className="text-white hover:text-blue-300 underline underline-offset-4">Log in here</Link>
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="py-12 bg-white border-t border-slate-200 mt-auto">

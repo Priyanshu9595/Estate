@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createLease, getLeasesByProperty, bookRoom, terminateLease, getMyLease, getExpiringLeases, getPendingRefunds, processRefund } = require('../controllers/leaseController');
+const { createLease, getLeasesByProperty, bookRoom, terminateLease, getMyLease, getMyLeaseHistory, getExpiringLeases, getPendingRefunds, processRefund } = require('../controllers/leaseController');
 const { protect, authorize } = require('../middleware/auth');
 
 router.post('/', protect, authorize('Admin'), createLease);
@@ -12,5 +12,6 @@ router.get('/property/:propertyId', protect, authorize('Owner', 'Admin'), getLea
 router.post('/book', protect, authorize('User'), bookRoom);
 router.post('/:id/terminate', protect, authorize('User'), terminateLease);
 router.get('/my-lease', protect, authorize('User'), getMyLease);
+router.get('/my-history', protect, authorize('User'), getMyLeaseHistory);
 
 module.exports = router;

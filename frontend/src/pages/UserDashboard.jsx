@@ -4,10 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-import { Star } from 'lucide-react';
+import { Star, Building, CreditCard } from 'lucide-react';
 
 const UserDashboard = () => {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('Overview');
+  const [leaseHistory, setLeaseHistory] = useState([]);
+  const [allRentHistory, setAllRentHistory] = useState([]);
+  
   const [activeLease, setActiveLease] = useState(null);
   const [nextRent, setNextRent] = useState(null);
   const [rentHistory, setRentHistory] = useState([]);
@@ -35,16 +39,20 @@ const UserDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [leaseRes, rentRes, maintenanceRes, noticeRes] = await Promise.all([
+      const [leaseRes, rentRes, maintenanceRes, noticeRes, leaseHistRes, rentHistRes] = await Promise.all([
         axios.get('/api/leases/my-lease'),
         axios.get('/api/rent/my-rent'),
         axios.get('/api/maintenance/my-requests'),
-        axios.get('/api/notices/my-notices').catch(() => ({ data: [] }))
+        axios.get('/api/notices/my-notices').catch(() => ({ data: [] })),
+        axios.get('/api/leases/my-history').catch(() => ({ data: [] })),
+        axios.get('/api/rent/my-history').catch(() => ({ data: [] }))
       ]);
       setActiveLease(leaseRes.data);
       setNextRent(rentRes.data);
       setMaintenanceRequests(maintenanceRes.data);
       setNotices(noticeRes.data || []);
+      setLeaseHistory(leaseHistRes.data || []);
+      setAllRentHistory(rentHistRes.data || []);
 
       if (leaseRes.data && leaseRes.data._id) {
         const historyRes = await axios.get(`/api/rent/lease/${leaseRes.data._id}`);
@@ -187,7 +195,26 @@ const UserDashboard = () => {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold text-gray-900 mb-2">My Dashboard</h1>
-      <p className="text-gray-600 mb-8">Welcome back, {user?.name}. Manage your rentals and requests here.</p>
+      <p className="text-gray-600 mb-6">Welcome back, {user?.name}. Manage your rentals and requests here.</p>
+
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 mb-8">
+        <button
+          onClick={() => setActiveTab('Overview')}
+          className={`py-3 px-6 font-bold text-sm border-b-2 transition-colors ${activeTab === 'Overview' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setActiveTab('History')}
+          className={`py-3 px-6 font-bold text-sm border-b-2 transition-colors ${activeTab === 'History' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          My History
+        </button>
+      </div>
+
+      {activeTab === 'Overview' && (
+        <>
 
       {/* Notice Board */}
       {notices.length > 0 && (
@@ -436,6 +463,98 @@ const UserDashboard = () => {
         </div>
 
       </div>
+      </>
+      )}
+
+      {activeTab === 'History' && (
+        <div className="space-y-8">
+          {/* Booking History */}
+          <div className="bg-surface p-6 rounded-xl shadow-sm border border-gray-100">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2"><Building size={20} className="text-primary"/> Booking History</h2>
+            {leaseHistory.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                      <th className="p-3 rounded-tl-lg font-bold">Property</th>
+                      <th className="p-3 font-bold">Room</th>
+                      <th className="p-3 font-bold">Duration</th>
+                      <th className="p-3 font-bold">Rent/Mo</th>
+                      <th className="p-3 rounded-tr-lg font-bold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-sm">
+                    {leaseHistory.map(lease => (
+                      <tr key={lease._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="p-3 font-semibold text-gray-900">{lease.property_id?.name}</td>
+                        <td className="p-3 text-gray-600">{lease.unit_id?.unit_no}</td>
+                        <td className="p-3 text-gray-600">
+                          {new Date(lease.start_date).toLocaleDateString()} - {lease.end_date ? new Date(lease.end_date).toLocaleDateString() : 'Present'}
+                        </td>
+                        <td className="p-3 text-gray-600">₹{lease.rent_amount}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            lease.status === 'Active' ? 'bg-green-100 text-green-700' :
+                            lease.status === 'Terminated' ? 'bg-red-100 text-red-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {lease.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">No booking history found.</p>
+            )}
+          </div>
+
+          {/* Payment History */}
+          <div className="bg-surface p-6 rounded-xl shadow-sm border border-gray-100">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2"><CreditCard size={20} className="text-primary"/> Payment Ledger</h2>
+            {allRentHistory.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                      <th className="p-3 rounded-tl-lg font-bold">Month/Date</th>
+                      <th className="p-3 font-bold">Property & Room</th>
+                      <th className="p-3 font-bold">Amount Paid</th>
+                      <th className="p-3 rounded-tr-lg font-bold">Receipt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-sm">
+                    {allRentHistory.map(rent => (
+                      <tr key={rent._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="p-3">
+                          <p className="font-semibold text-gray-900">{rent.month}</p>
+                          <p className="text-xs text-gray-500">{new Date(rent.due_date).toLocaleDateString()}</p>
+                        </td>
+                        <td className="p-3 text-gray-600">
+                          {rent.lease_id?.property_id?.name || 'N/A'} (Room: {rent.lease_id?.unit_id?.unit_no || 'N/A'})
+                        </td>
+                        <td className="p-3 font-semibold text-gray-900">₹{rent.paid_amount}</td>
+                        <td className="p-3">
+                          <button 
+                            onClick={() => downloadReceipt(rent)}
+                            className="flex items-center gap-2 text-primary hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                          >
+                            Download PDF
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">No payment history found.</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Refund Modal */}
       {showRefundModal && activeLease && (

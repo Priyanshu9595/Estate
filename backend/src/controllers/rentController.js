@@ -60,4 +60,28 @@ const getMyRent = async (req, res) => {
   }
 };
 
-module.exports = { generateRent, getRentByLease, getMyRent };
+// @desc    Get all rent history for current user
+// @route   GET /api/rent/my-history
+// @access  Private (User)
+const getMyRentHistory = async (req, res) => {
+  try {
+    const leases = await Lease.find({ user_id: req.user._id });
+    const leaseIds = leases.map(l => l._id);
+    
+    const rentHistory = await Rent.find({ lease_id: { $in: leaseIds }, status: 'Paid' })
+      .populate({
+        path: 'lease_id',
+        populate: [
+          { path: 'property_id', select: 'name' },
+          { path: 'unit_id', select: 'unit_no' }
+        ]
+      })
+      .sort({ due_date: -1 });
+
+    res.status(200).json(rentHistory);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { generateRent, getRentByLease, getMyRent, getMyRentHistory };
