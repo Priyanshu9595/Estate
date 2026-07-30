@@ -134,7 +134,7 @@ const PropertiesList = () => {
                           ? 'bg-red-500/90 text-white'
                           : property.status === 'Available' ? 'bg-green-500/90 text-white' : 'bg-blue-500/90 text-white'
                       }`}>
-                        {isFull ? 'Sold Out' : property.status}
+                        {isFull ? 'Fully Occupied' : property.status}
                       </span>
 
                       {property.average_rating > 0 && (
