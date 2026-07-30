@@ -51,7 +51,17 @@ const OwnerDashboard = () => {
     fetchExpenses();
     fetchExpiringLeases();
     fetchPendingRefunds();
+    fetchAdmins();
   }, []);
+
+  const fetchAdmins = async () => {
+    try {
+      const { data } = await axios.get('/api/auth/admins');
+      setAdmins(data);
+    } catch (err) {
+      console.error('Failed to fetch admins', err);
+    }
+  };
 
   const fetchPendingRefunds = async () => {
     try {
@@ -175,7 +185,7 @@ const OwnerDashboard = () => {
       state: property.state,
       rent_amount: property.rent_amount,
       deposit_amount: property.deposit_amount,
-      assigned_admin_id: property.assigned_admin_id,
+      assigned_admin_id: property.assigned_admin_id?._id || property.assigned_admin_id,
       rooms: 'Loading rooms...',
       images: property.images || [],
       imageFiles: [],
