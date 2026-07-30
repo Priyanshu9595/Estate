@@ -118,6 +118,7 @@ const AdminDashboard = () => {
       {/* Maintenance Section for Admin */}
       <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">Maintenance Requests</h2>
       <div className="bg-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+        <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -167,6 +168,7 @@ const AdminDashboard = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Resolve Modal */}
@@ -201,6 +203,7 @@ const AdminDashboard = () => {
 
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Managed Properties</h2>
       <div className="bg-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -238,6 +241,7 @@ const AdminDashboard = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

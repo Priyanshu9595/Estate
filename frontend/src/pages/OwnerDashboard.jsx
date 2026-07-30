@@ -595,6 +595,7 @@ const OwnerDashboard = () => {
       {/* Maintenance Expenses Table */}
       <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-12">Maintenance Expenses Breakdown</h2>
       <div className="bg-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-4">
+        <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -626,6 +627,7 @@ const OwnerDashboard = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Pending Refunds Table */}
@@ -633,6 +635,7 @@ const OwnerDashboard = () => {
         <>
           <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-12">Pending Refund Requests</h2>
           <div className="bg-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-4">
+            <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-red-50">
                 <tr>
@@ -674,6 +677,7 @@ const OwnerDashboard = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </>
       )}

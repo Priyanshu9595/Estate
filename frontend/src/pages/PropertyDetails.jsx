@@ -496,7 +496,7 @@ const PropertyDetails = () => {
         </div>
 
         {/* Right Column: Sticky Summary Box */}
-        <div className="lg:w-[400px] shrink-0">
+        <div className="w-full lg:w-[400px] shrink-0">
           <div className="sticky top-24 bg-white p-8 rounded-3xl shadow-2xl shadow-slate-200/50 border border-slate-100">
             <h3 className="text-3xl font-black text-slate-900 mb-2">₹{property.rent_amount}<span className="text-lg font-medium text-slate-500"> {property.type === 'DailyRoom' ? '/day' : '/month'}</span></h3>
             <p className="text-slate-500 font-medium mb-6">Base starting rent</p>
