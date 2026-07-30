@@ -2,11 +2,41 @@ import { API_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Building2, MapPin, IndianRupee, ArrowLeft, CheckCircle2, User, Phone, Mail, FileText, Calendar, X, PenTool, Star } from 'lucide-react';
+import { Building2, MapPin, IndianRupee, ArrowLeft, CheckCircle2, User, Phone, Mail, FileText, Calendar, X, PenTool, Star, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import SignatureCanvas from 'react-signature-canvas';
 import { useRef } from 'react';
 import { generateLeasePDF } from '../utils/leaseGenerator';
+
+import React from 'react';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+  componentDidCatch(error, errorInfo) {
+    this.setState({ error, errorInfo });
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 max-w-4xl mx-auto mt-10 border border-red-200 bg-red-50 rounded-xl">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">React Render Crash</h1>
+          <p className="text-lg font-semibold mb-2">{this.state.error && this.state.error.toString()}</p>
+          <pre className="bg-white p-4 border border-red-100 rounded text-sm overflow-auto text-red-800">
+            {this.state.errorInfo && this.state.errorInfo.componentStack}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -19,6 +49,7 @@ const PropertyDetails = () => {
   const [hasActiveLease, setHasActiveLease] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [averageRating, setAverageRating] = useState(0);
+  const [roomSearchQuery, setRoomSearchQuery] = useState('');
 
   // Booking Modal State
   const [bookingUnit, setBookingUnit] = useState(null);
@@ -92,7 +123,7 @@ const PropertyDetails = () => {
 
       const reviewRes = await axios.get(`/api/reviews/${id}`).catch(() => ({ data: { reviews: [], averageRating: 0, totalReviews: 0 } }));
       setReviews(reviewRes.data.reviews || []);
-      setAverageRating(reviewRes.data.averageRating || 0);
+      setAverageRating(Number(reviewRes.data.averageRating) || 0);
 
       if (user?.role === 'User') {
         const leaseRes = await axios.get('/api/leases/my-lease');
@@ -111,7 +142,11 @@ const PropertyDetails = () => {
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
   if (!data) return <div className="p-8 text-center text-gray-500">Property not found</div>;
 
-  const { property, units } = data;
+  const { property, units = [] } = data;
+
+  const filteredUnits = units.filter(unit =>
+    String(unit?.unit_no || '').toLowerCase().includes((roomSearchQuery || '').toLowerCase())
+  );
 
   const handleKycNext = (e) => {
     e.preventDefault();
@@ -294,6 +329,7 @@ const PropertyDetails = () => {
   };
 
   return (
+    <ErrorBoundary>
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-screen">
       {/* Back Button */}
       <div className="mb-6">
@@ -383,17 +419,35 @@ const PropertyDetails = () => {
 
           {/* Rooms Grid */}
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-              Select a Room <span className="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">{units.length} total</span>
-            </h2>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                Select a Room <span className="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">{units.length} total</span>
+              </h2>
+              <div className="relative w-full sm:w-64">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-slate-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search room number..."
+                  value={roomSearchQuery}
+                  onChange={(e) => setRoomSearchQuery(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-colors shadow-sm"
+                />
+              </div>
+            </div>
 
             {units.length === 0 ? (
               <div className="bg-yellow-50 text-yellow-800 p-6 rounded-2xl border border-yellow-200 text-center font-medium">
                 No rooms are available for this property yet.
               </div>
+            ) : filteredUnits.length === 0 ? (
+              <div className="bg-slate-50 text-slate-500 p-6 rounded-2xl border border-slate-200 text-center font-medium">
+                No rooms found matching "{roomSearchQuery}".
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {units.map((unit) => (
+                {filteredUnits.map((unit) => (
                   <div
                     key={unit._id}
                     onClick={() => {
@@ -408,7 +462,7 @@ const PropertyDetails = () => {
                         {unit.unit_no}
                       </h3>
                       <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider shadow-sm ${unit.status === 'Available' ? 'bg-green-50 text-green-600 border border-green-200' :
-                          unit.status === 'Occupied' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-orange-50 text-orange-600 border border-orange-200'
+                        unit.status === 'Occupied' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-orange-50 text-orange-600 border border-orange-200'
                         }`}>
                         {unit.status}
                       </span>
@@ -953,6 +1007,8 @@ const PropertyDetails = () => {
         )}
       </div>
     </div>
+    </ErrorBoundary>
   );
 };
+
 export default PropertyDetails;
