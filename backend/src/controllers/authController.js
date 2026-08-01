@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const sendEmail = require('../utils/sendEmail');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -39,6 +40,26 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
+      // Send email with credentials
+      try {
+        await sendEmail({
+          email: user.email,
+          subject: 'Your EstateFlow Account Credentials',
+          html: `
+            <h1>Welcome to EstateFlow, ${user.name}!</h1>
+            <p>Your account has been successfully created.</p>
+            <p>Here are your login credentials:</p>
+            <ul>
+              <li><strong>Email:</strong> ${user.email}</li>
+              <li><strong>Password:</strong> ${password}</li>
+            </ul>
+            <p>Please log in and change your password as soon as possible.</p>
+          `
+        });
+      } catch (emailError) {
+        console.error('Error sending welcome email:', emailError);
+      }
+
       res.status(201).json({
         _id: user.id,
         name: user.name,
@@ -172,6 +193,26 @@ const createAdmin = async (req, res) => {
       role: 'Admin',
     });
 
+    // Send email with credentials
+    try {
+      await sendEmail({
+        email: admin.email,
+        subject: 'Your EstateFlow Admin Credentials',
+        html: `
+          <h1>Welcome to EstateFlow, ${admin.name}!</h1>
+          <p>An admin account has been created for you.</p>
+          <p>Here are your login credentials:</p>
+          <ul>
+            <li><strong>Email:</strong> ${admin.email}</li>
+            <li><strong>Password:</strong> ${password}</li>
+          </ul>
+          <p>Please log in and change your password as soon as possible.</p>
+        `
+      });
+    } catch (emailError) {
+      console.error('Error sending admin welcome email:', emailError);
+    }
+
     res.status(201).json({
       _id: admin.id,
       name: admin.name,
@@ -273,9 +314,9 @@ const getTenants = async (req, res) => {
 
     let properties;
     if (req.user.role === 'Owner') {
-      properties = await Property.find({ owner_id: req.user._id });
+      properties = await Property.find({ owner_id: req.user._id }).lean();
     } else if (req.user.role === 'Admin') {
-      properties = await Property.find({ assigned_admin_id: req.user._id });
+      properties = await Property.find({ assigned_admin_id: req.user._id }).lean();
     } else {
       return res.status(403).json({ message: 'Not authorized' });
     }
@@ -286,7 +327,8 @@ const getTenants = async (req, res) => {
     const leases = await Lease.find({ property_id: { $in: propertyIds }, status: 'Active' })
       .populate('user_id', '-password')
       .populate('property_id')
-      .populate('unit_id');
+      .populate('unit_id')
+      .lean();
 
     // Extract users and attach lease info
     const tenants = leases.map(lease => {

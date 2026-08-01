@@ -41,7 +41,7 @@ const createLease = async (req, res) => {
 // @access  Private (Admin/Owner)
 const getLeasesByProperty = async (req, res) => {
   try {
-    const leases = await Lease.find({ property_id: req.params.propertyId }).populate('user_id', 'name email phone');
+    const leases = await Lease.find({ property_id: req.params.propertyId }).populate('user_id', 'name email phone').lean();
     res.status(200).json(leases);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -271,7 +271,8 @@ const getMyLeaseHistory = async (req, res) => {
     const leases = await Lease.find({ user_id: req.user._id })
       .populate('property_id')
       .populate('unit_id')
-      .sort({ start_date: -1 });
+      .sort({ start_date: -1 })
+      .lean();
     res.status(200).json(leases);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -285,9 +286,9 @@ const getExpiringLeases = async (req, res) => {
   try {
     let properties;
     if (req.user.role === 'Owner') {
-      properties = await Property.find({ owner_id: req.user._id });
+      properties = await Property.find({ owner_id: req.user._id }).lean();
     } else if (req.user.role === 'Admin') {
-      properties = await Property.find({ assigned_admin_id: req.user._id });
+      properties = await Property.find({ assigned_admin_id: req.user._id }).lean();
     } else {
       return res.status(403).json({ message: 'Not authorized' });
     }
@@ -302,7 +303,9 @@ const getExpiringLeases = async (req, res) => {
       property_id: { $in: propertyIds },
       status: 'Active',
       end_date: { $gte: today, $lte: thirtyDaysFromNow }
-    }).populate('property_id unit_id user_id');
+    })
+      .populate('property_id unit_id user_id')
+      .lean();
 
     res.status(200).json(expiringLeases);
   } catch (error) {
@@ -317,9 +320,9 @@ const getPendingRefunds = async (req, res) => {
   try {
     let properties;
     if (req.user.role === 'Owner') {
-      properties = await Property.find({ owner_id: req.user._id });
+      properties = await Property.find({ owner_id: req.user._id }).lean();
     } else if (req.user.role === 'Admin') {
-      properties = await Property.find({ assigned_admin_id: req.user._id });
+      properties = await Property.find({ assigned_admin_id: req.user._id }).lean();
     } else {
       return res.status(403).json({ message: 'Not authorized' });
     }
@@ -328,7 +331,9 @@ const getPendingRefunds = async (req, res) => {
     const refunds = await Lease.find({
       property_id: { $in: propertyIds },
       refund_status: 'Pending'
-    }).populate('property_id unit_id user_id');
+    })
+      .populate('property_id unit_id user_id')
+      .lean();
 
     res.status(200).json(refunds);
   } catch (error) {

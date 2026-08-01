@@ -21,7 +21,7 @@ const getProperties = async (req, res) => {
 
     // Attach stats (Occupied rooms and actual revenue)
     const propertyIds = properties.map(p => p._id);
-    const units = await Unit.find({ property_id: { $in: propertyIds } });
+    const units = await Unit.find({ property_id: { $in: propertyIds } }).lean();
     
     // Include Active leases AND Terminated leases that still have a Pending refund
     const activeLeases = await Lease.find({ 
@@ -30,9 +30,9 @@ const getProperties = async (req, res) => {
         { status: 'Active' },
         { status: 'Terminated', refund_status: 'Pending' }
       ]
-    });
+    }).lean();
 
-    const reviews = await Review.find({ property_id: { $in: propertyIds } });
+    const reviews = await Review.find({ property_id: { $in: propertyIds } }).lean();
 
     const propertiesWithStats = properties.map(prop => {
       const propUnits = units.filter(u => u.property_id.toString() === prop._id.toString());

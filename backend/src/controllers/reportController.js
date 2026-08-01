@@ -11,9 +11,9 @@ const getFinancialReports = async (req, res) => {
   try {
     let properties;
     if (req.user.role === 'Owner') {
-      properties = await Property.find({ owner_id: req.user._id });
+      properties = await Property.find({ owner_id: req.user._id }).lean();
     } else if (req.user.role === 'Admin') {
-      properties = await Property.find({ assigned_admin_id: req.user._id });
+      properties = await Property.find({ assigned_admin_id: req.user._id }).lean();
     } else {
       return res.status(403).json({ message: 'Not authorized' });
     }
@@ -21,19 +21,19 @@ const getFinancialReports = async (req, res) => {
     const propertyIds = properties.map(p => p._id);
 
     // Get all leases for these properties
-    const leases = await Lease.find({ property_id: { $in: propertyIds } }).populate('property_id unit_id user_id');
+    const leases = await Lease.find({ property_id: { $in: propertyIds } }).populate('property_id unit_id user_id').lean();
     const leaseIds = leases.map(l => l._id);
 
     // Get all rents and payments for these leases
     const rents = await Rent.find({ lease_id: { $in: leaseIds } }).populate({
       path: 'lease_id',
       populate: { path: 'property_id unit_id user_id' }
-    });
+    }).lean();
 
     // We can also get payments if needed, but rent has paid_amount which is enough for basic reporting
     
     // Get all maintenance requests for these properties
-    const maintenance = await Maintenance.find({ property_id: { $in: propertyIds } }).populate('property_id user_id');
+    const maintenance = await Maintenance.find({ property_id: { $in: propertyIds } }).populate('property_id user_id').lean();
 
     // Structure the data for easy CSV export on frontend
     const rentData = rents.map(r => ({
