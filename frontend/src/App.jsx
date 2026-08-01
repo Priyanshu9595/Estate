@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -25,33 +26,48 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 function App() {
   const { user } = useAuth();
+  
+  const isDashboardUser = user && (user.role === 'Admin' || user.role === 'Owner');
+
+  const appRoutes = (
+    <Routes>
+      <Route path="/" element={user ? <Navigate to={`/${user.role.toLowerCase()}-dashboard`} /> : <LandingPage />} />
+      <Route path="/login" element={user ? <Navigate to={`/${user.role.toLowerCase()}-dashboard`} /> : <Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms-of-service" element={<TermsOfService />} />
+      
+      {/* Protected Routes */}
+      <Route path="/admin-dashboard" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/owner-dashboard" element={<ProtectedRoute allowedRoles={['Owner']}><OwnerDashboard /></ProtectedRoute>} />
+      <Route path="/user-dashboard" element={<ProtectedRoute allowedRoles={['User']}><UserDashboard /></ProtectedRoute>} />
+      <Route path="/properties" element={<ProtectedRoute allowedRoles={['Admin', 'Owner', 'User']}><PropertiesList /></ProtectedRoute>} />
+      <Route path="/property/:id" element={<ProtectedRoute allowedRoles={['Admin', 'Owner', 'User']}><PropertyDetails /></ProtectedRoute>} />
+      <Route path="/reports" element={<ProtectedRoute allowedRoles={['Admin', 'Owner']}><Reports /></ProtectedRoute>} />
+      <Route path="/tenants" element={<ProtectedRoute allowedRoles={['Admin', 'Owner']}><TenantList /></ProtectedRoute>} />
+      <Route path="/admins" element={<ProtectedRoute allowedRoles={['Owner']}><AdminList /></ProtectedRoute>} />
+      {/* Future routes: /users, /rent, /maintenance */}
+    </Routes>
+  );
 
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={user ? <Navigate to={`/${user.role.toLowerCase()}-dashboard`} /> : <Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/terms-of-service" element={<TermsOfService />} />
-            
-            {/* Protected Routes */}
-            <Route path="/admin-dashboard" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/owner-dashboard" element={<ProtectedRoute allowedRoles={['Owner']}><OwnerDashboard /></ProtectedRoute>} />
-            <Route path="/user-dashboard" element={<ProtectedRoute allowedRoles={['User']}><UserDashboard /></ProtectedRoute>} />
-            <Route path="/properties" element={<ProtectedRoute allowedRoles={['Admin', 'Owner', 'User']}><PropertiesList /></ProtectedRoute>} />
-            <Route path="/property/:id" element={<ProtectedRoute allowedRoles={['Admin', 'Owner', 'User']}><PropertyDetails /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute allowedRoles={['Admin', 'Owner']}><Reports /></ProtectedRoute>} />
-            <Route path="/tenants" element={<ProtectedRoute allowedRoles={['Admin', 'Owner']}><TenantList /></ProtectedRoute>} />
-            <Route path="/admins" element={<ProtectedRoute allowedRoles={['Owner']}><AdminList /></ProtectedRoute>} />
-            {/* Future routes: /users, /rent, /maintenance */}
-          </Routes>
-        </main>
-        {user && <Chatbot />}
-      </div>
+      {isDashboardUser ? (
+        <div className="flex h-screen bg-background overflow-hidden">
+          <Sidebar />
+          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
+            {appRoutes}
+          </main>
+        </div>
+      ) : (
+        <div className="min-h-screen flex flex-col bg-background">
+          <Navbar />
+          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {appRoutes}
+          </main>
+        </div>
+      )}
+      {user && <Chatbot />}
     </Router>
   );
 }
