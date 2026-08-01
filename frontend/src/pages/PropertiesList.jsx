@@ -32,38 +32,45 @@ const PropertiesList = () => {
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
       {/* Premium Hero Section */}
-      <div className="bg-slate-900 text-white pt-16 pb-24 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-slate-50 via-white to-blue-50/30 text-slate-900 pt-10 pb-16 relative overflow-hidden border-b border-slate-100">
+        
+        {/* Subtle Grid Pattern Background */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMCwwLDAsMC4wNSkiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)]"></div>
+
         {/* Background Decorative Blobs */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 blur-[100px] rounded-full translate-x-1/3 -translate-y-1/3"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/20 blur-[100px] rounded-full -translate-x-1/3 translate-y-1/3"></div>
+        <div className="absolute top-0 right-10 w-[300px] h-[300px] bg-blue-200/40 blur-[80px] rounded-full mix-blend-multiply"></div>
+        <div className="absolute -bottom-10 left-10 w-[300px] h-[300px] bg-indigo-200/40 blur-[80px] rounded-full mix-blend-multiply"></div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight leading-tight">
+            <h1 className="text-3xl md:text-4xl font-black mb-2 tracking-tight leading-tight text-slate-800">
               Find Your Next <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">Perfect Home.</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Perfect Home.</span>
             </h1>
-            <p className="text-lg text-slate-400 font-medium max-w-xl">
-              Explore hand-picked properties designed for comfortable and modern living.
+            <p className="text-sm md:text-base text-slate-500 font-medium max-w-xl leading-relaxed">
+              Explore hand-picked properties designed for comfortable and modern living. Elevate your lifestyle today.
             </p>
           </div>
           
           {user?.role === 'Owner' && (
             <button 
               onClick={() => navigate('/owner-dashboard', { state: { openCreateForm: true } })}
-              className="bg-primary/20 backdrop-blur-md border border-primary/30 text-white px-6 py-3 rounded-xl font-bold hover:bg-primary/40 transition-colors shadow-lg flex items-center gap-2"
+              className="group bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-primary transition-all shadow-md hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2 text-sm"
             >
-              <Building2 size={18} /> Add Property
+              <div className="bg-white/20 p-1 rounded-lg group-hover:bg-white/30 transition-colors">
+                <Building2 size={16} className="text-white" /> 
+              </div>
+              <span>Add Property</span>
             </button>
           )}
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-20">
         
         {/* Floating Search Bar */}
-        <div className="bg-white p-4 rounded-2xl shadow-xl shadow-slate-200/50 flex flex-col sm:flex-row gap-4 mb-12 border border-slate-100">
+        <div className="bg-white p-3 rounded-2xl shadow-xl shadow-slate-200/50 flex flex-col sm:flex-row gap-3 mb-10 border border-slate-100">
           <div className="flex-1 relative">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400">
               <Search size={20} />
