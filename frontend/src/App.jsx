@@ -53,7 +53,7 @@ function App() {
   return (
     <Router>
       {isDashboardUser ? (
-        <div className="flex h-screen bg-background overflow-hidden">
+        <div className="flex flex-col lg:flex-row h-screen bg-background overflow-hidden">
           <Sidebar />
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
             {appRoutes}
