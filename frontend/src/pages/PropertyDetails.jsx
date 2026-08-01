@@ -371,7 +371,7 @@ const PropertyDetails = () => {
           {/* Header Info */}
           <div>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+              <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
                 {property.name}
               </h1>
             </div>

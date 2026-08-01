@@ -22,5 +22,6 @@ const reviewSchema = new mongoose.Schema({
     required: true,
   },
 }, { timestamps: true });
+reviewSchema.index({ property_id: 1 });
 
 module.exports = mongoose.model('Review', reviewSchema);

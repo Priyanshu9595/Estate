@@ -56,5 +56,9 @@ const leaseSchema = new mongoose.Schema({
     ifsc_code: { type: String, default: '' },
   },
 }, { timestamps: true });
+leaseSchema.index({ property_id: 1 });
+leaseSchema.index({ unit_id: 1 });
+leaseSchema.index({ user_id: 1 });
+leaseSchema.index({ status: 1 });
 
 module.exports = mongoose.model('Lease', leaseSchema);

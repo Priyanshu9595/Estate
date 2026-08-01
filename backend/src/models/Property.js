@@ -51,5 +51,7 @@ const propertySchema = new mongoose.Schema({
   amenities: [String],
   images: [String], // Array of URLs
 }, { timestamps: true });
+propertySchema.index({ owner_id: 1 });
+propertySchema.index({ assigned_admin_id: 1 });
 
 module.exports = mongoose.model('Property', propertySchema);

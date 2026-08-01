@@ -26,5 +26,6 @@ const unitSchema = new mongoose.Schema({
     default: 'Available',
   },
 }, { timestamps: true });
+unitSchema.index({ property_id: 1 });
 
 module.exports = mongoose.model('Unit', unitSchema);
