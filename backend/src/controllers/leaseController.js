@@ -65,20 +65,20 @@ const bookRoom = async (req, res) => {
     const property = await Property.findById(property_id);
     if (!property) return res.status(404).json({ message: 'Property not found' });
 
-    // Treat retries after a successful payment as success instead of failing the booking flow.
-    const existingLease = await Lease.findOne({ user_id: req.user._id, status: 'Active' });
+    // Allow multiple bookings unless it's the exact same room
+    const existingLease = await Lease.findOne({ 
+      user_id: req.user._id, 
+      status: 'Active',
+      property_id: property_id,
+      unit_id: unit_id
+    });
+    
     if (existingLease) {
-      if (
-        existingLease.property_id.toString() === property_id.toString() &&
-        existingLease.unit_id.toString() === unit_id.toString()
-      ) {
-        return res.status(200).json({
-          message: 'Room already booked successfully!',
-          lease: existingLease,
-          alreadyBooked: true,
-        });
-      }
-      return res.status(400).json({ message: 'You already have an active booking.' });
+      return res.status(200).json({
+        message: 'Room already booked successfully!',
+        lease: existingLease,
+        alreadyBooked: true,
+      });
     }
 
     if (unit.status !== 'Available') return res.status(400).json({ message: 'Room is not available' });
@@ -250,14 +250,11 @@ const terminateLease = async (req, res) => {
 // @access  Private (User)
 const getMyLease = async (req, res) => {
   try {
-    const lease = await Lease.findOne({ user_id: req.user._id, status: 'Active' })
+    const leases = await Lease.find({ user_id: req.user._id, status: 'Active' })
       .populate('property_id')
       .populate('unit_id');
       
-    if (!lease) {
-      return res.status(200).json(null); // Return null if no active lease
-    }
-    res.status(200).json(lease);
+    res.status(200).json(leases);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -46,15 +46,27 @@ const getRentByLease = async (req, res) => {
 // @access  Private (User)
 const getMyRent = async (req, res) => {
   try {
-    // Find active lease for user
-    const lease = await Lease.findOne({ user_id: req.user._id, status: 'Active' });
-    if (!lease) {
-      return res.status(200).json(null);
+    // Find active leases for user
+    const leases = await Lease.find({ user_id: req.user._id, status: 'Active' });
+    if (!leases || leases.length === 0) {
+      return res.status(200).json([]);
     }
     
-    // Find the next pending rent
-    const nextRent = await Rent.findOne({ lease_id: lease._id, status: 'Pending' }).sort({ due_date: 1 });
-    res.status(200).json(nextRent);
+    const leaseIds = leases.map(l => l._id);
+    
+    // Find the next pending rent for each lease
+    const pendingRents = await Rent.find({ lease_id: { $in: leaseIds }, status: 'Pending' }).sort({ due_date: 1 });
+    
+    const nextRents = [];
+    const leaseIdSet = new Set();
+    for (const rent of pendingRents) {
+      if (!leaseIdSet.has(rent.lease_id.toString())) {
+        nextRents.push(rent);
+        leaseIdSet.add(rent.lease_id.toString());
+      }
+    }
+    
+    res.status(200).json(nextRents);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

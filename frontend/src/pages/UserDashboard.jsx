@@ -12,8 +12,8 @@ const UserDashboard = () => {
   const [leaseHistory, setLeaseHistory] = useState([]);
   const [allRentHistory, setAllRentHistory] = useState([]);
   
-  const [activeLease, setActiveLease] = useState(null);
-  const [nextRent, setNextRent] = useState(null);
+  const [activeLeases, setActiveLeases] = useState([]);
+  const [nextRents, setNextRents] = useState([]);
   const [rentHistory, setRentHistory] = useState([]);
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
   const [notices, setNotices] = useState([]);
@@ -47,16 +47,19 @@ const UserDashboard = () => {
         axios.get('/api/leases/my-history').catch(() => ({ data: [] })),
         axios.get('/api/rent/my-history').catch(() => ({ data: [] }))
       ]);
-      setActiveLease(leaseRes.data);
-      setNextRent(rentRes.data);
+      setActiveLeases(leaseRes.data || []);
+      setNextRents(rentRes.data || []);
       setMaintenanceRequests(maintenanceRes.data);
       setNotices(noticeRes.data || []);
       setLeaseHistory(leaseHistRes.data || []);
       setAllRentHistory(rentHistRes.data || []);
 
-      if (leaseRes.data && leaseRes.data._id) {
-        const historyRes = await axios.get(`/api/rent/lease/${leaseRes.data._id}`);
-        setRentHistory(historyRes.data);
+      if (leaseRes.data && leaseRes.data.length > 0) {
+        // Fetch rent history for all active leases
+        const rentHistoryPromises = leaseRes.data.map(lease => axios.get(`/api/rent/lease/${lease._id}`));
+        const historyResArray = await Promise.all(rentHistoryPromises);
+        const combinedHistory = historyResArray.flatMap(res => res.data);
+        setRentHistory(combinedHistory);
       }
     } catch (err) {
       console.error('Failed to fetch dashboard data', err);
@@ -90,14 +93,15 @@ const UserDashboard = () => {
       doc.text(String(user?.name || 'Tenant'), 14, 72);
       doc.text(String(user?.email || ''), 14, 78);
       
-      // Property Details
-      if (activeLease?.property_id) {
+      // Property Details (Finding which lease this rent belongs to)
+      const relatedLease = activeLeases.find(l => rent.lease_id === l._id || rent.lease_id?._id === l._id);
+      if (relatedLease?.property_id) {
         doc.setFontSize(10);
         doc.text('Property Details:', 120, 65);
         doc.setFontSize(11);
-        doc.text(String(activeLease.property_id.name || ''), 120, 72);
-        if (activeLease.unit_id) {
-          doc.text(`Unit/Room: ${String(activeLease.unit_id.unit_no || '')}`, 120, 78);
+        doc.text(String(relatedLease.property_id.name || ''), 120, 72);
+        if (relatedLease.unit_id) {
+          doc.text(`Unit/Room: ${String(relatedLease.unit_id.unit_no || '')}`, 120, 78);
         }
       }
 
@@ -133,9 +137,9 @@ const UserDashboard = () => {
     }
     
     try {
-      const { data } = await axios.post(`/api/leases/${activeLease._id}/terminate`, bankDetails);
+      const { data } = await axios.post(`/api/leases/${bankDetails.leaseId}/terminate`, bankDetails);
       setRefundMessage(data.message);
-      setActiveLease(null);
+      setActiveLeases(activeLeases.filter(l => l._id !== bankDetails.leaseId));
       setShowRefundModal(false);
     } catch (err) {
       console.error('Failed to leave room', err);
@@ -152,12 +156,14 @@ const UserDashboard = () => {
   const handleMaintenanceSubmit = async (e) => {
     e.preventDefault();
     if (!description.trim()) return alert('Please enter a description');
-    if (!activeLease) return alert('You do not have an active lease');
+    if (activeLeases.length === 0) return alert('You do not have an active lease');
     
     setIsSubmitting(true);
     try {
+      // If multiple, just use the first for simplicity, or ideally we'd let user pick
+      const targetLease = activeLeases[0];
       await axios.post('/api/maintenance', {
-        property_id: activeLease.property_id._id,
+        property_id: targetLease.property_id._id,
         category,
         priority: 'Medium',
         description
@@ -174,12 +180,12 @@ const UserDashboard = () => {
   
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
-    if (!activeLease) return;
+    if (activeLeases.length === 0) return;
     setReviewSubmitting(true);
     setReviewMessage('');
     try {
       await axios.post('/api/reviews', {
-        property_id: activeLease.property_id._id,
+        property_id: activeLeases[0].property_id._id,
         rating,
         comment
       });
@@ -251,68 +257,78 @@ const UserDashboard = () => {
 
           {loading ? (
             <div className="text-gray-500">Checking your booking status...</div>
-          ) : activeLease ? (
-            <>
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 relative overflow-hidden">
-                <div className="absolute top-0 right-0 bg-blue-100 text-blue-700 px-3 py-1 text-xs font-bold rounded-bl-lg">
-                   {nextRent ? `Due: ${new Date(nextRent.due_date).toLocaleDateString()}` : 'Fully Paid'}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-blue-800">Monthly Rent</p>
-                  <p className="text-2xl font-bold text-blue-900">₹{activeLease.rent_amount}</p>
-                  {nextRent && (
-                    <p className="text-xs text-blue-700 mt-1 font-medium">
-                      Payment for {nextRent.month}
-                    </p>
-                  )}
-                </div>
-                {nextRent ? (
-                  <button 
-                    onClick={() => alert(`Redirecting to pay ₹${nextRent.due_amount} for ${nextRent.month}...`)}
-                    className="bg-primary hover:bg-blue-800 text-white px-6 py-2.5 rounded-lg font-bold transition-colors shadow-sm w-full sm:w-auto z-10 text-sm"
-                  >
-                    Pay Rent Now
-                  </button>
-                ) : (
-                  <div className="bg-green-100 text-green-700 px-6 py-2 rounded-lg font-bold shadow-sm w-full sm:w-auto text-center">
-                    All clear!
+          ) : activeLeases.length > 0 ? (
+            <div className="space-y-8">
+              {activeLeases.map((lease) => {
+                const nextRent = nextRents.find(r => r.lease_id === lease._id);
+                return (
+                  <div key={lease._id} className="border-b border-gray-200 pb-8 last:border-0 last:pb-0">
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 bg-blue-100 text-blue-700 px-3 py-1 text-xs font-bold rounded-bl-lg">
+                        {nextRent ? `Due: ${new Date(nextRent.due_date).toLocaleDateString()}` : 'Fully Paid'}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-blue-800">Monthly Rent</p>
+                        <p className="text-2xl font-bold text-blue-900">₹{lease.rent_amount}</p>
+                        {nextRent && (
+                          <p className="text-xs text-blue-700 mt-1 font-medium">
+                            Payment for {nextRent.month}
+                          </p>
+                        )}
+                      </div>
+                      {nextRent ? (
+                        <button 
+                          onClick={() => alert(`Redirecting to pay ₹${nextRent.due_amount} for ${nextRent.month}...`)}
+                          className="bg-primary hover:bg-blue-800 text-white px-6 py-2.5 rounded-lg font-bold transition-colors shadow-sm w-full sm:w-auto z-10 text-sm"
+                        >
+                          Pay Rent Now
+                        </button>
+                      ) : (
+                        <div className="bg-green-100 text-green-700 px-6 py-2 rounded-lg font-bold shadow-sm w-full sm:w-auto text-center">
+                          All clear!
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-4 mb-6">
+                      <div className="flex justify-between border-b border-gray-100 pb-3">
+                        <span className="text-gray-500">Property</span>
+                        <span className="font-bold text-gray-900">{lease.property_id?.name}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-gray-100 pb-3">
+                        <span className="text-gray-500">Room Number</span>
+                        <span className="font-bold text-primary">{lease.unit_id?.unit_no}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-gray-100 pb-3">
+                        <span className="text-gray-500">Initial Advance Paid</span>
+                        <span className="font-bold text-gray-900">₹{lease.deposit}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-gray-100 pb-3">
+                        <span className="text-gray-500">Move-in Date</span>
+                        <span className="font-medium text-gray-900">{new Date(lease.start_date).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-200">
+                      <p className="text-sm text-gray-500 mb-3">Planning to move out of this room? You will receive a 50% refund (₹{lease.deposit * 0.5}) of your initial advance deposit.</p>
+                      <button 
+                        onClick={() => {
+                          setBankDetails({ ...bankDetails, leaseId: lease._id, refundAmount: lease.deposit * 0.5 });
+                          setShowRefundModal(true);
+                        }}
+                        className="w-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white px-4 py-3 rounded-lg font-bold transition-colors"
+                      >
+                        Leave Room & Claim Refund
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
+                );
+              })}
               
-              <div className="space-y-4 mb-8">
-                <div className="flex justify-between border-b border-gray-100 pb-3">
-                  <span className="text-gray-500">Property</span>
-                  <span className="font-bold text-gray-900">{activeLease.property_id?.name}</span>
-                </div>
-                <div className="flex justify-between border-b border-gray-100 pb-3">
-                  <span className="text-gray-500">Room Number</span>
-                  <span className="font-bold text-primary">{activeLease.unit_id?.unit_no}</span>
-                </div>
-                <div className="flex justify-between border-b border-gray-100 pb-3">
-                  <span className="text-gray-500">Initial Advance Paid</span>
-                  <span className="font-bold text-gray-900">₹{activeLease.deposit}</span>
-                </div>
-                <div className="flex justify-between border-b border-gray-100 pb-3">
-                  <span className="text-gray-500">Move-in Date</span>
-                  <span className="font-medium text-gray-900">{new Date(activeLease.start_date).toLocaleDateString()}</span>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-gray-200">
-                <p className="text-sm text-gray-500 mb-3">Planning to move out? You will receive a 50% refund (₹{activeLease.deposit * 0.5}) of your initial advance deposit.</p>
-                <button 
-                  onClick={() => setShowRefundModal(true)}
-                  className="w-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white px-4 py-3 rounded-lg font-bold transition-colors"
-                >
-                  Leave Room & Claim Refund
-                </button>
-              </div>
-
               {/* Rate Property Section */}
               <div className="pt-6 mt-6 border-t border-gray-200">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Star className="w-5 h-5 text-yellow-500 fill-yellow-500" /> Rate this Property</h3>
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Star className="w-5 h-5 text-yellow-500 fill-yellow-500" /> Rate a Property</h3>
                   <button 
                     onClick={() => setShowReviewForm(!showReviewForm)}
                     className="text-primary text-sm font-medium hover:underline"
@@ -381,7 +397,7 @@ const UserDashboard = () => {
                   <p className="text-sm text-gray-500">No payment history available.</p>
                 )}
               </div>
-            </>
+            </div>
           ) : (
             <div className="text-center py-8">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -557,12 +573,12 @@ const UserDashboard = () => {
       )}
 
       {/* Refund Modal */}
-      {showRefundModal && activeLease && (
+      {showRefundModal && bankDetails.leaseId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
             <div className="bg-red-600 p-6 text-white text-center">
               <h2 className="text-2xl font-bold">Leave Room</h2>
-              <p className="opacity-90 mt-1">Request 50% Deposit Refund (₹{activeLease.deposit * 0.5})</p>
+              <p className="opacity-90 mt-1">Request 50% Deposit Refund (₹{bankDetails.refundAmount})</p>
             </div>
             <form onSubmit={handleLeaveRoom} className="p-6">
               <p className="text-sm text-gray-600 mb-4">
