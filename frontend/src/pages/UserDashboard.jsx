@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -8,7 +9,16 @@ import { Star, Building, CreditCard } from 'lucide-react';
 
 const UserDashboard = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Overview');
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('tab') === 'History') {
+      setActiveTab('History');
+    }
+  }, [location.search]);
   const [leaseHistory, setLeaseHistory] = useState([]);
   const [allRentHistory, setAllRentHistory] = useState([]);
   
@@ -206,13 +216,13 @@ const UserDashboard = () => {
       {/* Tabs */}
       <div className="flex border-b border-gray-200 mb-8">
         <button
-          onClick={() => setActiveTab('Overview')}
+          onClick={() => { setActiveTab('Overview'); navigate('/user-dashboard'); }}
           className={`py-3 px-6 font-bold text-sm border-b-2 transition-colors ${activeTab === 'Overview' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
           Overview
         </button>
         <button
-          onClick={() => setActiveTab('History')}
+          onClick={() => { setActiveTab('History'); navigate('/user-dashboard?tab=History'); }}
           className={`py-3 px-6 font-bold text-sm border-b-2 transition-colors ${activeTab === 'History' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
           My History
@@ -371,32 +381,7 @@ const UserDashboard = () => {
                 )}
               </div>
 
-              {/* Payment History */}
-              <div className="pt-6 mt-6 border-t border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Payment History</h3>
-                {rentHistory.length > 0 ? (
-                  <div className="space-y-3">
-                    {rentHistory.map(rent => (
-                      <div key={rent._id} className="flex justify-between items-center p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div>
-                          <p className="font-bold text-gray-900">{rent.month}</p>
-                          <p className="text-sm text-gray-500">₹{rent.rent_amount} • {rent.status}</p>
-                        </div>
-                        {rent.status === 'Paid' && (
-                          <button 
-                            onClick={() => downloadReceipt(rent)}
-                            className="flex items-center gap-2 text-primary hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors"
-                          >
-                            <span className="text-lg">📄</span> Download PDF
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500">No payment history available.</p>
-                )}
-              </div>
+
             </div>
           ) : (
             <div className="text-center py-8">

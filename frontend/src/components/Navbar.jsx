@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Building2, Building, LayoutDashboard, User as UserIcon, ChevronDown, LogOut, Menu, X } from 'lucide-react';
+import { Building2, Building, LayoutDashboard, User as UserIcon, ChevronDown, LogOut, Menu, X, CreditCard } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -40,6 +40,9 @@ const Navbar = () => {
   const navLinks = user ? [
     { name: 'Dashboard', path: `/${user.role.toLowerCase()}-dashboard`, icon: <LayoutDashboard className="h-4 w-4" /> },
     { name: 'Properties', path: '/properties', icon: <Building className="h-4 w-4" /> },
+    ...(user.role === 'User' ? [
+      { name: 'Payment History', path: '/user-dashboard?tab=History', icon: <CreditCard className="h-4 w-4" /> }
+    ] : []),
     ...(user.role === 'Owner' || user.role === 'Admin' ? [
       { name: 'Reports', path: '/reports' },
       { name: 'Tenants', path: '/tenants' }
@@ -75,7 +78,7 @@ const Navbar = () => {
                       key={idx}
                       to={link.path} 
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
-                        location.pathname.includes(link.path) 
+                        (link.path.includes('?') ? location.pathname + location.search === link.path : location.pathname.includes(link.path) && location.search === '') 
                           ? 'bg-blue-50 text-blue-600' 
                           : 'text-gray-500 hover:bg-gray-50'
                       }`}
@@ -157,7 +160,7 @@ const Navbar = () => {
                     key={idx}
                     to={link.path} 
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${
-                      location.pathname.includes(link.path) 
+                      (link.path.includes('?') ? location.pathname + location.search === link.path : location.pathname.includes(link.path) && location.search === '') 
                         ? 'bg-blue-50 text-blue-700' 
                         : 'text-gray-600 hover:bg-gray-50'
                     }`}
