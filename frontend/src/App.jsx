@@ -19,7 +19,7 @@ import Chatbot from './components/Chatbot';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
-  if (!user) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/" />;
   if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/" />;
   return children;
 };

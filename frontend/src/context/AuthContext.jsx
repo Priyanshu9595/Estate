@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
           // Token expired, user deleted, or account inactive
           logout();
-          window.location.href = '/login';
+          window.location.href = '/';
         }
         return Promise.reject(error);
       }

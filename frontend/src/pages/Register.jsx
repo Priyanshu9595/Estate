@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -69,8 +70,14 @@ const Register = () => {
       </div>
 
       {/* Right Form Section */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 relative">
         <div className="max-w-md w-full">
+          {/* Back to Home Link */}
+          <Link to="/" className="inline-flex items-center text-sm font-semibold text-gray-500 hover:text-primary transition-colors mb-8">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Home
+          </Link>
+
           <div className="text-center lg:text-left mb-8">
             <h2 className="text-3xl lg:text-4xl font-extrabold text-gray-900">Create Account</h2>
             <p className="text-gray-500 mt-2 font-medium">Join EstateFlow today and simplify your property management.</p>
