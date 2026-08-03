@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useLocation, Link } from 'react-router-dom';
-import { Building2, DollarSign, Shield, Wrench, Edit, Trash2, User, Mail, Lock, Phone, Megaphone } from 'lucide-react';
+import { Building2, DollarSign, Shield, Wrench, Edit, Trash2, User, Mail, Lock, Phone, Megaphone, Clock } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const OwnerDashboard = () => {
@@ -274,50 +274,61 @@ const OwnerDashboard = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-8 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 mb-8 items-start">
         {/* Stats Column */}
-        <div className="xl:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-surface p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-start">
-            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 mb-4">
-              <Building2 className="w-6 h-6" />
+        <div className="xl:col-span-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="bg-surface p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-start">
+            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 mb-3">
+              <Building2 className="w-5 h-5" />
             </div>
-            <h3 className="text-gray-500 text-sm font-medium">Total Properties</h3>
-            <p className="text-4xl font-bold text-blue-900 mt-2">{properties.length}</p>
+            <h3 className="text-gray-500 text-xs font-medium">Total Properties</h3>
+            <p className="text-2xl font-bold text-blue-900 mt-1">{properties.length}</p>
           </div>
           <div 
             onClick={() => setActiveModal('revenue')}
-            className="bg-surface p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-start cursor-pointer hover:ring-2 hover:ring-green-100 hover:shadow-md transition-all"
+            className="bg-surface p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-start cursor-pointer hover:ring-2 hover:ring-green-100 hover:shadow-md transition-all"
           >
-            <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-500 mb-4">
-              <DollarSign className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-500 mb-3">
+              <DollarSign className="w-5 h-5" />
             </div>
-            <h3 className="text-gray-500 text-sm font-medium">Active Revenue (Monthly)</h3>
-            <p className="text-4xl font-bold text-green-500 mt-2">
+            <h3 className="text-gray-500 text-xs font-medium">Active Revenue (Monthly)</h3>
+            <p className="text-2xl font-bold text-green-500 mt-1">
               ₹{properties.reduce((acc, curr) => acc + (curr.active_revenue || 0), 0).toLocaleString('en-IN')}
             </p>
           </div>
           <div 
             onClick={() => setActiveModal('deposits')}
-            className="bg-surface p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-start cursor-pointer hover:ring-2 hover:ring-purple-100 hover:shadow-md transition-all"
+            className="bg-surface p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-start cursor-pointer hover:ring-2 hover:ring-purple-100 hover:shadow-md transition-all"
           >
-            <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-500 mb-4">
-              <Shield className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-500 mb-3">
+              <Shield className="w-5 h-5" />
             </div>
-            <h3 className="text-gray-500 text-sm font-medium">Security Deposits (Advances) Held</h3>
-            <p className="text-4xl font-bold text-purple-500 mt-2">
+            <h3 className="text-gray-500 text-xs font-medium">Security Deposits (Advances) Held</h3>
+            <p className="text-2xl font-bold text-purple-500 mt-1">
               ₹{properties.reduce((acc, curr) => acc + (curr.total_advance || 0), 0).toLocaleString('en-IN')}
             </p>
           </div>
           <div 
             onClick={() => setActiveModal('maintenance')}
-            className="bg-surface p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-start cursor-pointer hover:ring-2 hover:ring-red-100 hover:shadow-md transition-all"
+            className="bg-surface p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-start cursor-pointer hover:ring-2 hover:ring-red-100 hover:shadow-md transition-all"
           >
-            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-4">
-              <Wrench className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-3">
+              <Wrench className="w-5 h-5" />
             </div>
-            <h3 className="text-gray-500 text-sm font-medium">Total Maintenance Expenses</h3>
-            <p className="text-4xl font-bold text-red-500 mt-2">
+            <h3 className="text-gray-500 text-xs font-medium">Total Maintenance Expenses</h3>
+            <p className="text-2xl font-bold text-red-500 mt-1">
               ₹{expenses.reduce((acc, curr) => acc + (curr.cost || 0), 0).toLocaleString('en-IN')}
+            </p>
+          </div>
+          <div 
+            className="bg-surface p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-start cursor-pointer hover:ring-2 hover:ring-orange-100 hover:shadow-md transition-all"
+          >
+            <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 mb-3">
+              <Clock className="w-5 h-5" />
+            </div>
+            <h3 className="text-gray-500 text-xs font-medium">Pending Maintenance</h3>
+            <p className="text-2xl font-bold text-orange-500 mt-1">
+              {expenses.filter(e => e.status !== 'Resolved').length}
             </p>
           </div>
         </div>

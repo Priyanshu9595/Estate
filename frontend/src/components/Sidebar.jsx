@@ -75,22 +75,22 @@ const Sidebar = () => {
       </div>
 
       <div className="p-4 border-t border-gray-100">
-        <div className="bg-gray-50 rounded-xl p-4 mb-4 flex items-center gap-3">
-          <div className="bg-primary/10 p-2 rounded-full text-primary">
+        <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
+          <div className="bg-primary/10 p-2 rounded-full text-primary shrink-0">
             <UserIcon className="h-5 w-5" />
           </div>
-          <div className="overflow-hidden">
+          <div className="overflow-hidden flex-1">
             <p className="font-bold text-gray-900 truncate">{user?.name}</p>
             <p className="text-xs text-gray-500 font-medium">{user?.role}</p>
           </div>
+          <button 
+            onClick={handleLogout} 
+            className="p-2 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors shrink-0"
+            title="Sign Out"
+          >
+            <LogOut className="h-5 w-5" />
+          </button>
         </div>
-        <button 
-          onClick={handleLogout} 
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl font-bold transition-colors"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </button>
       </div>
     </div>
   );

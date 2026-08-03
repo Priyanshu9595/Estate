@@ -27,7 +27,7 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-80px)] bg-white overflow-hidden">
+    <div className="flex min-h-screen bg-white overflow-hidden">
       {/* Left Image Section */}
       <div className="hidden lg:flex w-1/2 relative items-center justify-center p-12 bg-slate-50 overflow-hidden border-r border-slate-100">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50"></div>

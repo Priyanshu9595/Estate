@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -24,10 +24,13 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
-function App() {
+const AppContent = () => {
   const { user } = useAuth();
+  const location = useLocation();
   
   const isDashboardUser = user && (user.role === 'Admin' || user.role === 'Owner');
+  const hideNavbarRoutes = ['/login', '/register'];
+  const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
 
   const appRoutes = (
     <Routes>
@@ -51,7 +54,7 @@ function App() {
   );
 
   return (
-    <Router>
+    <>
       {isDashboardUser ? (
         <div className="flex flex-col lg:flex-row h-screen bg-background overflow-hidden">
           <Sidebar />
@@ -61,13 +64,21 @@ function App() {
         </div>
       ) : (
         <div className="min-h-screen flex flex-col bg-background">
-          <Navbar />
-          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {!shouldHideNavbar && <Navbar />}
+          <main className={!shouldHideNavbar ? "flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" : "flex-1 w-full"}>
             {appRoutes}
           </main>
         </div>
       )}
       {user && <Chatbot />}
+    </>
+  );
+};
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 }
