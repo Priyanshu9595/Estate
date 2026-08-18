@@ -167,3 +167,37 @@ describe('PropertyDetails', () => {
     expect(screen.queryByRole('heading', { name: 'Maple Residency' })).not.toBeInTheDocument();
   });
 });
+
+describe('PropertyDetails booking availability', () => {
+  beforeEach(() => {
+    axios.get.mockReset();
+  });
+
+  const withLease = (lease) => {
+    axios.get.mockImplementation((url) => {
+      if (url === '/api/properties/p1') {
+        return Promise.resolve({ data: { property: buildProperty(), units: [buildUnit()] } });
+      }
+      if (url.startsWith('/api/reviews/')) return Promise.resolve({ data: { reviews: [], averageRating: 0 } });
+      if (url === '/api/leases/my-lease') return lease();
+      return Promise.reject(new Error(`unexpected request: ${url}`));
+    });
+  };
+
+  it('offers booking to a tenant who holds no lease', async () => {
+    withLease(() => Promise.resolve({ data: {} }));
+
+    renderAt('p1');
+
+    expect(await screen.findByRole('button', { name: 'Book Now' })).toBeInTheDocument();
+  });
+
+  it('withholds booking from a tenant who already holds a lease', async () => {
+    withLease(() => Promise.resolve({ data: { _id: 'lease-1' } }));
+
+    renderAt('p1');
+    await screen.findByText('101');
+
+    expect(screen.queryByRole('button', { name: 'Book Now' })).not.toBeInTheDocument();
+  });
+});
