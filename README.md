@@ -2,16 +2,19 @@
 
 Property management for landlords and tenants: owners publish properties and rooms,
 tenants browse them, complete KYC, sign a lease and pay rent online, and admins work
-through maintenance requests. The React app lives at the repository root; the Express
-API that backs it lives in `backend/`.
+through maintenance requests.
+
+This repository holds the React client. It talks to the EstateFlow API over HTTP —
+point it at one with `VITE_API_URL`. Without that variable the app calls
+`http://localhost:5000` on localhost and its own origin elsewhere, see
+[src/config.js](src/config.js).
 
 ## Requirements
 
 - Node.js 20 or newer
 - npm
-- MongoDB (for the API)
 
-## Frontend
+## Getting started
 
 ```bash
 npm install
@@ -21,21 +24,6 @@ npm run lint     # oxlint
 npm run build    # production bundle
 ```
 
-Point the app at an API with `VITE_API_URL`. Without it the app talks to
-`http://localhost:5000` on localhost and to its own origin elsewhere — see
-[src/config.js](src/config.js).
-
-## Backend
-
-```bash
-cd backend
-npm install
-npm run dev      # nodemon on src/index.js
-```
-
-The API reads `MONGO_URI`, `JWT_SECRET`, mail credentials and Razorpay keys from a
-`.env` file in `backend/`.
-
 ## Layout
 
 | Path | Contents |
@@ -44,4 +32,3 @@ The API reads `MONGO_URI`, `JWT_SECRET`, mail credentials and Razorpay keys from
 | `src/components` | Navbar, sidebar and the AI chatbot widget |
 | `src/context` | Auth provider and the axios auth interceptor |
 | `src/utils` | Lease PDF generation |
-| `backend/src` | Express routes, controllers and Mongoose models |

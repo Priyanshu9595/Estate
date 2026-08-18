@@ -22,7 +22,3 @@ pnpm-debug.log*
 .DS_Store
 *.local
 *.sw?
-
-# Runtime uploads
-backend/uploads/*
-!backend/uploads/.gitkeep

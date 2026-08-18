@@ -1,8 +1,0 @@
-const express = require('express');
-const router = express.Router();
-const { handleChat } = require('../controllers/chatbotController');
-const { protect } = require('../middleware/auth');
-
-router.post('/', protect, handleChat);
-
-module.exports = router;
