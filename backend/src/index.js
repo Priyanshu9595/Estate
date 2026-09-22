@@ -31,7 +31,18 @@ app.get('/uploads/:filename', async (req, res) => {
       return res.status(404).send('File not found');
     }
     
-    res.set('Content-Type', files[0].contentType);
+    const ext = require('path').extname(req.params.filename).toLowerCase();
+    const mimeTypes = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp'
+    };
+    
+    const contentType = files[0].contentType || (files[0].metadata && files[0].metadata.contentType) || mimeTypes[ext] || 'application/octet-stream';
+    res.set('Content-Type', contentType);
+    
     const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
     downloadStream.pipe(res);
   } catch (error) {
