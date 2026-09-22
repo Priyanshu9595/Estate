@@ -58,6 +58,10 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'EstateFlow API is running' });
 });
 
+app.get('/', (req, res) => {
+  res.status(200).send('EstateFlow API is running');
+});
+
 // Port configuration
 const PORT = process.env.PORT || 5000;
 
