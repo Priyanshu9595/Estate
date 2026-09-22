@@ -1,4 +1,4 @@
-import { API_URL } from '../config';
+import { API_URL, getImageUrl } from '../config';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -344,12 +344,12 @@ const PropertyDetails = () => {
         <div className="mb-12 relative rounded-3xl overflow-hidden shadow-2xl shadow-slate-200/50">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-2 h-[50vh] min-h-[400px]">
             <div className={`md:col-span-${property.images.length === 1 ? '4' : '2'} row-span-2 relative group cursor-pointer overflow-hidden`}>
-              <img src={`${API_URL}${property.images[0]}`} alt={property.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
+              <img src={getImageUrl(property.images[0])} alt={property.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
               <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
             </div>
             {property.images.slice(1, 5).map((img, idx) => (
               <div key={idx} className="md:col-span-1 relative group cursor-pointer overflow-hidden hidden md:block">
-                <img src={`${API_URL}${img}`} alt={`${property.name} ${idx + 2}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                <img src={getImageUrl(img)} alt={`${property.name} ${idx + 2}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
               </div>
             ))}
@@ -863,7 +863,7 @@ const PropertyDetails = () => {
                 <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
                   {viewingTenantUnit.tenant.kyc_details?.photo ? (
                     <img
-                      src={`${API_URL}${viewingTenantUnit.tenant.kyc_details.photo}`}
+                      src={getImageUrl(viewingTenantUnit.tenant.kyc_details.photo)}
                       alt="Tenant Photo"
                       className="w-20 h-20 rounded-full object-cover border-4 border-gray-50 shadow-sm"
                     />
@@ -930,7 +930,7 @@ const PropertyDetails = () => {
                       ].filter(doc => doc.url).map((doc) => (
                         <a
                           key={doc.label}
-                          href={`${API_URL}${doc.url}`}
+                          href={getImageUrl(doc.url)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-primary hover:shadow-sm transition-all group"

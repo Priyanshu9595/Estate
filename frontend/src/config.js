@@ -10,3 +10,15 @@ if (!configuredApiUrl && !isLocalhost) {
     'VITE_API_URL is not set. Falling back to same-origin API. Set VITE_API_URL to your Render backend URL if backend is deployed separately.'
   );
 }
+
+export const getImageUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  
+  // Remove trailing slash from API_URL if exists
+  const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+  // Ensure path starts with slash
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  
+  return `${baseUrl}${cleanPath}`;
+};

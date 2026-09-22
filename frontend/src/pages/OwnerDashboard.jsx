@@ -1,4 +1,4 @@
-import { API_URL } from '../config';
+import { API_URL, getImageUrl } from '../config';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -544,7 +544,7 @@ const OwnerDashboard = () => {
                   <p className="font-semibold mb-2">Currently Saved Images ({newProperty.images.length}):</p>
                   <div className="flex gap-3 overflow-x-auto pb-2">
                     {newProperty.images.map((img, i) => (
-                      <img key={i} src={`${API_URL}${img}`} alt="Property" className="h-24 w-36 object-cover rounded-lg shadow-sm shrink-0 border" />
+                      <img key={i} src={getImageUrl(img)} alt="Property" className="h-24 w-36 object-cover rounded-lg shadow-sm shrink-0 border" />
                     ))}
                   </div>
                 </div>

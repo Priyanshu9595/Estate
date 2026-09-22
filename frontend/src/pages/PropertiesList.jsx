@@ -1,4 +1,4 @@
-import { API_URL } from '../config';
+import { API_URL, getImageUrl } from '../config';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
@@ -124,7 +124,7 @@ const PropertiesList = () => {
                   {/* Image Section - 4:3 Aspect Ratio */}
                   <div className="aspect-[4/3] bg-slate-100 overflow-hidden relative">
                     {property.images && property.images.length > 0 ? (
-                      <img src={`${API_URL}${property.images[0]}`} alt={property.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out" />
+                      <img src={getImageUrl(property.images[0])} alt={property.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-200 font-medium">
                         No Image
