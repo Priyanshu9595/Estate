@@ -22,3 +22,6 @@ pnpm-debug.log*
 .DS_Store
 *.local
 *.sw?
+
+# Runtime uploads (KYC documents and photos) — never commit
+backend/uploads/
