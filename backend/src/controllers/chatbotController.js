@@ -80,7 +80,7 @@ STRICT RULES:
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
       ],
-      model: 'llama-3.1-8b-instant', 
+      model: 'qwen/qwen3.8-27b', 
     });
 
     res.json({ reply: chatCompletion.choices[0]?.message?.content || "No response" });
